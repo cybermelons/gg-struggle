@@ -30,6 +30,8 @@ var getStorage = () => {
 }
 
 export default async (req, res) => {
+  console.time('gg-struggle api request')
+
   // parrot the regular gg server for now
   if (req.method.toLowerCase() !== 'post') {
     // ignore non-posts
@@ -43,7 +45,7 @@ export default async (req, res) => {
   var payload;
   const query = {slug: req.query.slug, method: req.method, headers: req.headers, body: req.body}
 
-  console.log({query})
+  console.log(`[Inc. Request] ${query.slug.join('/')} ${query.method} ${query.body.data}`)
   if (storage.contains(query)) {
     payload = storage.get(query)
     const { slug, method, body } = query;
@@ -52,18 +54,15 @@ export default async (req, res) => {
   else {
     // send query to gg's servers
     payload = await ggServerPost(query)
-    console.log(`Storing response from gg server for ${query.slug.join('/')}`)
+    console.log(`Storing response from gg server for api/${query.slug.join('/')}`)
     storage.set(query, payload)
   }
 
   {
     const { status, body } = payload
-    console.log({payload})
-    console.log({storage})
     res.status(status)
     res.send(body)
+    console.timeEnd('gg-struggle api request')
   }
 }
 
-//var eventEmitter = new events.EventEmitter();
-//eventEmitter.addListener('
