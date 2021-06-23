@@ -17,18 +17,18 @@ stale data.
 
 ## TODO
 
-[ ] Monitor client traffic with wireshark
-[ ] Boot kali, run mitmdump between localhost and gg server
+[x] Monitor client traffic with wireshark
+[x] Boot kali, run mitmdump between localhost and gg server
   - save keylogs to file
   - write output to another file
-[ ] Point windows system proxy to mitmdump server
-[ ] play gg
-  [ ] launch gg
-  [ ] struggle
-  [ ] play opponent
-[ ] save logs and keyfile
-[ ] decrypt wireshark traffic with keyfile
-[ ] map post request w/ data -> server response json payload
+[x] Point windows system proxy to mitmdump server
+[x] play gg
+  [x] launch gg
+  [x] struggle
+  [x] play opponent
+[x] save logs and keyfile
+[x] decrypt wireshark traffic with keyfile
+[x] map post request w/ data -> server response json payload
   - save as raw json file
 [ ] create router to serve cached results from file (nextjs)
   [ ] hit real gg server for cache misses
@@ -66,12 +66,13 @@ Since we do know we'll run into the P2P issues, we'll monitor and parse the pay
 loads for IP addresses and network stuff.
 
 
-
-Do an offsite static analysis of post data requests. Map the request to list of json strings.
+Do an offsite static analysis of post data requests.
+Map the request to list of json strings.
 
 ## Bugs
 
 If the game crashes or gives some server issue, we need to know what time that
 happened and to who. Then we can check our logs for it.
 
-If it doesn’t work, user needs to ping devs immediately. Canned data needs to be recached.
+If it doesn’t work, user needs to ping devs immediately.  Canned data needs
+to be recached.
