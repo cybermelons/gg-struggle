@@ -1,15 +1,36 @@
-import { events } from 'events'
-
 import { ggServerPost } from '../../utils/gg-server.js'
+var hash = require('object-hash')
 
-var PAYLOAD_STORE = {}
+
+class PayloadStore {
+  constructor(props) {
+    this.storage = {}
+  }
+
+  contains({slug, method, body}) {
+    const key = hash({slug, method, body})
+    return (key in this.storage)
+  }
+
+  get({slug, method, body}) {
+    const key = hash({slug, method, body})
+    return this.storage[key]
+  }
+
+  set(queryObj, payload) {
+    const { slug, method, body } = queryObj
+    const key = hash({slug, method, body})
+    this.storage[key] = payload;
+  }
+}
+
+var PAYLOAD_STORE = new PayloadStore()
 var getStorage = () => {
   return PAYLOAD_STORE
 }
 
-export default function handler(req, res) {
+export default async (req, res) => {
   // parrot the regular gg server for now
-
   if (req.method.toLowerCase() !== 'post') {
     // ignore non-posts
     console.log(`Got non-POST request: `)
@@ -20,21 +41,27 @@ export default function handler(req, res) {
 
   var storage = getStorage()
   var payload;
-  const query = {slug: req.slug, method: req.method, headers: req.headers, body: req.body}
-  if (query in storage) {
-    payload = storage[query]
+  const query = {slug: req.query.slug, method: req.method, headers: req.headers, body: req.body}
+
+  console.log({query})
+  if (storage.contains(query)) {
+    payload = storage.get(query)
+    const { slug, method, body } = query;
+    console.log(`Cache hit: ${slug.join('/')} ${method} ${body.data}`)
   }
   else {
     // send query to gg's servers
-    payload = ggServerPost(query)
-    storage[query] = payload
+    payload = await ggServerPost(query)
+    console.log(`Storing response from gg server for ${query.slug.join('/')}`)
+    storage.set(query, payload)
   }
 
   {
     const { status, body } = payload
+    console.log({payload})
+    console.log({storage})
     res.status(status)
     res.send(body)
-    console.log({body})
   }
 }
 
