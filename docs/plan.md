@@ -28,7 +28,7 @@ stale data.
   [x] play opponent
 [x] save logs and keyfile
 [x] decrypt wireshark traffic with keyfile
-[x] map post request w/ data -> server response json payload
+[ ] map post request w/ data -> server response json payload
   - save as raw json file
 [ ] create router to serve cached results from file (nextjs)
   [ ] hit real gg server for cache misses
