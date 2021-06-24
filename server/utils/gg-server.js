@@ -1,44 +1,41 @@
-const https = require('https')
-const https = require('axios')
-
+import https from 'https'
+import axios from 'axios'
+import qs from 'qs'
 
 const ggServerPost = async ({ headers, body, slug, method }) => {
+  const hostname = 'ggst-game.guiltygear.com'
+  //const hostname = 'yeet.st'
   const options = {
-    hostname: 'yeet.st',
-    //hostname: 'ggst-game.guiltygear.com',
-    port: 443,
+    hostname: hostname,
+    //port: 443,
     method: method,
-    path: `api/${slug.join('/')}`,
     headers: {
       'user-agent': 'Steam',
+      'accept': '*/*',
       'content-type': 'application/x-www-form-urlencoded',
-    }
+      'connection': 'keep-alive',
+    },
+    data: qs.stringify(body)
   }
-
-  console.log(`pinging ggst`)
   console.log({options})
 
   const payload = new Promise((resolve, reject) => {
+
     // TODO log failed responses
+    const url = `https://${options.hostname}/api/${slug.join('/')}`
+    console.log(`getting response from ${url}`)
+    axios(url, options)
+    .then( (ggresp) => {
+        console.log(`Response received from gg servers`)
+        console.log({ggresp})
 
-    const req = https.request(options, (res) => {
-      console.log(`Setting up req to gg server`)
-      console.log({res})
-
-      res.on('data', d => {
-        // return the body
-        resolve({ status: res.statusCode, headers: {}, body: d})
-      })
+        resolve({ status: ggresp.status, headers: ggresp.headers, body: ggresp.data})
     })
 
-    req.on('error', (e) => {
-      console.error(`Request to gg server failed`);
-      console.error(e)
+    .catch((e) => {
+      console.error(`Error sending request to gg server: ${e}`)
       reject({ status: 505, headers: {}, body: options})
     })
-
-    req.write(body.data)
-    req.end()
   })
 
   return payload;

@@ -17,6 +17,7 @@ stale data.
 
 ## TODO
 
+[ ] switch to expressjs for header-mirroring
 [ ] Monitor client traffic with wireshark
 [ ] Boot kali, run mitmdump between localhost and gg server
   - save keylogs to file
@@ -75,3 +76,4 @@ If the game crashes or gives some server issue, we need to know what time that
 happened and to who. Then we can check our logs for it.
 
 If it doesn’t work, user needs to ping devs immediately. Canned data needs to be recached.
+
