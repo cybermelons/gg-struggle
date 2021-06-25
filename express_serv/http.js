@@ -1,6 +1,7 @@
 const https = require('https')
 const http = require('http')
 const hash = require('object-hash')
+const fs = require('fs')
 const SmartBuffer = require('smart-buffer').SmartBuffer;
 
 const port = 3000
@@ -32,6 +33,16 @@ class CacheLayer {
     const {url, method} = req
     const body = reqBuffer.toString()
     return hash({url, method, body})
+  }
+
+  getLogFiles(req, reqBuffer) {
+    const key = this._makeKey(req, reqBuffer)
+    return {
+      gameReqFile : fs.createWriteStream(`${key}.gameReq.dump`),
+      gameRespFile : fs.createWriteStream(`${key}.gameResp.dump`),
+      ggReqFile : fs.createWriteStream(`${key}.ggReq.dump`),
+      ggRespFile : fs.createWriteStream(`${key}.ggResp.dump`),
+    }
   }
 
   get(req, reqBuffer) {
@@ -72,11 +83,12 @@ const app = http.createServer( (gameReq, gameResp) => {
 
   gameReq.on('data', (d) => {
     gameReqBuffer.writeBuffer(d)
+
+    const { gameReqFile, gameRespFile, ggReqFile, ggRespFile } = getStorage().getLogFiles(gameReq, gameReqBuffer)
+    gameReqFile.write(d)
   })
 
   gameResp.on('finish', () => {
-    console.log('Sent back to game: ')
-    console.log({gameResp})
     console.timeEnd('gg-struggle api request')
   })
   gameResp.on('error', () => {
@@ -109,6 +121,12 @@ const app = http.createServer( (gameReq, gameResp) => {
           gameResp.write(d)
         })
 
+        ggResp.on('data', d => {
+          // write to log
+          const { gameReqFile, gameRespFile, ggReqFile, ggRespFile } = getStorage().getLogFiles(gameReq, gameReqBuffer)
+          gameResp.write(d)
+        })
+
         ggResp.on('end', e => {
           gameResp.headers = ggResp.headers
           gameResp.statusCode = ggResp.statusCode
@@ -135,7 +153,7 @@ const app = http.createServer( (gameReq, gameResp) => {
       // send the ggReq
       ggReq.headers = gameReq.headers
       ggReq.statusCode = gameReq.statusCode
-      ggReq.end(gameReqBuffer.toBuffer())
+      ggReq.end(gameReqBuffer.toString())
     }
 
   })
