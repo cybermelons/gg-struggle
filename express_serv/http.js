@@ -31,10 +31,6 @@ class CacheLayer {
     //    method, url, body
     const {url, method} = req
     const body = reqBuffer.toString()
-
-    console.log({reqBuffer})
-    console.log({url, method, body})
-    console.log(hash({url, method, body}))
     return hash({url, method, body})
   }
 
@@ -57,6 +53,7 @@ function getStorage() {
 
 // create server to gg server
 const app = http.createServer( (gameReq, gameResp) => {
+  console.time('gg-struggle api request')
   console.log(`[GAMEREQ] ${gameReq.url} ${gameReq.method}`)
   const options = {
     hostname: 'ggst-game.guiltygear.com',
@@ -77,9 +74,17 @@ const app = http.createServer( (gameReq, gameResp) => {
     gameReqBuffer.writeBuffer(d)
   })
 
+  gameResp.on('finish', () => {
+    console.log('Sent back to game: ')
+    console.log({gameResp})
+    console.timeEnd('gg-struggle api request')
+  })
+  gameResp.on('error', () => {
+    console.timeEnd('gg-struggle api request')
+  })
+
   gameReq.on('end', () => {
     let storage = getStorage()
-    console.log({gameReqBuffer})
     if (storage.contains(gameReq, gameReqBuffer)) {
       // return cached resp
       console.log(`Cache hit: ${gameReq.url} ${gameReq.method} ${gameReqBuffer.toBuffer()}`)
@@ -96,7 +101,7 @@ const app = http.createServer( (gameReq, gameResp) => {
 
       // create ggRequest
       const ggReq = https.request(options, (ggResp) => {
-        console.log(`Attempting to get ggResponse`)
+        console.debug(`Attempting to get ggResponse`)
 
         ggResp.on('data', d => {
           // when we get payload data from gg, write it to cache and back to game
@@ -105,13 +110,14 @@ const app = http.createServer( (gameReq, gameResp) => {
         })
 
         ggResp.on('end', e => {
-          console.log(`Successfully got response from gg`)
           gameResp.headers = ggResp.headers
           gameResp.statusCode = ggResp.statusCode
           gameResp.end()
 
           cachedResponse.headers = ggResp.headers
           cachedResponse.statusCode = ggResp.statusCode
+          console.log({cachedResponse})
+          console.debug(`Returned ${gameResp.statusCode}`)
         })
 
         ggResp.on('error', e => {
