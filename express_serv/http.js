@@ -65,7 +65,6 @@ function getStorage() {
 // create server to gg server
 const app = http.createServer( (gameReq, gameResp) => {
   console.time('gg-struggle api request')
-  console.log(`[GAMEREQ] ${gameReq.url} ${gameReq.method}`)
   const options = {
     hostname: 'ggst-game.guiltygear.com',
     port: 443,
@@ -94,6 +93,10 @@ const app = http.createServer( (gameReq, gameResp) => {
 
   gameReq.on('end', () => {
     let storage = getStorage()
+    const key = storage._makeKey(gameReq, gameReqBuffer)
+
+    console.log(`[GAMEREQ] ${gameReq.url} ${gameReq.method} ${key}`)
+
     if (storage.contains(gameReq, gameReqBuffer)) {
       // return cached resp
       console.log(`Cache hit: ${gameReq.url} ${gameReq.method} ${gameReqBuffer.toBuffer()}`)
@@ -101,12 +104,9 @@ const app = http.createServer( (gameReq, gameResp) => {
       gameResp.headers = cachedResponse.headers
       gameResp.statusCode = cachedResponse.statusCode
       gameResp.end(cachedResponse.buffer.toBuffer())
-
-
     }
 
     else {
-
       console.log(`Cache miss: ${gameReq.url} ${gameReq.method} ${gameReqBuffer.toBuffer()}`)
       let storage = getStorage()
       let cachedResponse = storage.setWriteable(gameReq, gameReqBuffer)
@@ -119,6 +119,7 @@ const app = http.createServer( (gameReq, gameResp) => {
           // when we get payload data from gg, write it to cache and back to game
           cachedResponse.buffer.writeBuffer(d)
           gameResp.write(d)
+          gameRespFile.write(d)
         })
 
         ggResp.on('end', e => {
@@ -156,11 +157,7 @@ const app = http.createServer( (gameReq, gameResp) => {
       } = getStorage().createLogFiles(gameReq, gameReqBuffer)
 
       gameReqFile.write(gameReqBuffer.toBuffer())
-
-      ggReq.on('data', d => {
-        ggReqFile.write(d)
-        console.log('ggReq written')
-      })
+      ggReqFile.write(gameReqBuffer.toBuffer())
 
       gameResp.on('data', (d) => {
         gameRespFile.write(d)
