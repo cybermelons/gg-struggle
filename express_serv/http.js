@@ -87,7 +87,8 @@ const app = http.createServer( (gameReq, gameResp) => {
   gameResp.on('finish', () => {
     console.timeEnd('gg-struggle api request')
   })
-  gameResp.on('error', () => {
+  gameResp.on('error', (e) => {
+    console.error(`Error writing response to game: ${e}`)
     console.timeEnd('gg-struggle api request')
   })
 
@@ -115,6 +116,10 @@ const app = http.createServer( (gameReq, gameResp) => {
       const ggReq = https.request(options, (ggResp) => {
         console.debug(`Attempting to get ggResponse`)
 
+        // set headers before any writing happens
+        gameResp.headers = ggResp.headers
+        gameResp.statusCode = ggResp.statusCode
+
         ggResp.on('data', d => {
           // when we get payload data from gg, write it to cache and back to game
           cachedResponse.buffer.writeBuffer(d)
@@ -122,9 +127,7 @@ const app = http.createServer( (gameReq, gameResp) => {
           gameRespFile.write(d)
         })
 
-        ggResp.on('end', e => {
-          gameResp.headers = ggResp.headers
-          gameResp.statusCode = ggResp.statusCode
+        ggResp.on('end', (e) => {
           gameResp.end()
 
           cachedResponse.headers = ggResp.headers
@@ -137,6 +140,11 @@ const app = http.createServer( (gameReq, gameResp) => {
         })
 
         ggResp.on('error', e => {
+          gameResp.headers = ggResp.headers
+          gameResp.statusCode = ggResp.statusCode
+          gameResp.writeHead(503)
+          gameResp.end()
+
           console.error(`Error in response from gg servers: ${e}`)
         })
       })
