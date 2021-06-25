@@ -102,8 +102,7 @@ const app = http.createServer( (gameReq, gameResp) => {
       // return cached resp
       console.log(`Cache hit: ${gameReq.url} ${gameReq.method} ${gameReqBuffer.toBuffer()}`)
       let cachedResponse = storage.get(gameReq, gameReqBuffer)
-      gameResp.headers = cachedResponse.headers
-      gameResp.statusCode = cachedResponse.statusCode
+      gameResp.writeHead(cachedResponse.statusCode, cachedResponse.headers)
       gameResp.end(cachedResponse.buffer.toBuffer())
     }
 
@@ -119,6 +118,7 @@ const app = http.createServer( (gameReq, gameResp) => {
         // set headers before any writing happens
         gameResp.headers = ggResp.headers
         gameResp.statusCode = ggResp.statusCode
+        gameResp.writeHead(ggResp.statusCode, ggResp.headers)
 
         ggResp.on('data', d => {
           // when we get payload data from gg, write it to cache and back to game
