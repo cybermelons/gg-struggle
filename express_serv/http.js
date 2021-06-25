@@ -15,7 +15,9 @@ class CacheLayer {
   }
 
   setWriteable(req, reqBuffer) {
-    // return a writeable stream for this key-val
+    const key = this._makeKey(req, reqBuffer)
+    this.storage[key] = new SmartBuffer()
+    return this.storage[key]
   }
 
   _makeKey(req, reqBuffer) {
@@ -27,13 +29,13 @@ class CacheLayer {
   }
 
   get(req, reqBuffer) {
-    const key = _makeKey(req, reqBuffer)
+    const key = this._makeKey(req, reqBuffer)
     return this.storage[key]
   }
 
   contains(req, reqBuffer) {
     // TODO invalidate old requests
-    return _makeKey(req, reqBuffer) in this.storage
+    return this._makeKey(req, reqBuffer) in this.storage
   }
 }
 var CACHE_LAYER = new CacheLayer()
@@ -44,7 +46,6 @@ function getStorage() {
 
 // create server to gg server
 const app = http.createServer( (gameReq, gameResp) => {
-  console.log({gameReq})
   console.log(`[GAMEREQ] ${gameReq.url} ${gameReq.method}`)
   const options = {
     hostname: 'ggst-game.guiltygear.com',
@@ -70,13 +71,13 @@ const app = http.createServer( (gameReq, gameResp) => {
     if (storage.contains(gameReq, gameReqBuffer)) {
       // return cached resp
       console.log(`Cache hit: ${gameReq.url} ${gameReq.method} ${gameReqBuffer.toBuffer()}`)
-      let cachedResp = storage.get(gameReq, gameReqBuffer)
       gameResp.headers = ggResp.headers
       gameResp.statusCode = ggResp.statusCode
       gameResp.end(gameReqBuffer.toBuffer())
     }
 
     else {
+      console.log(`Cache miss: ${gameReq.url} ${gameReq.method} ${gameReqBuffer.toBuffer()}`)
       let storage = getStorage()
       let cachedResponse = storage.setWriteable(gameReq, gameReqBuffer)
 
@@ -86,7 +87,7 @@ const app = http.createServer( (gameReq, gameResp) => {
 
         ggResp.on('data', d => {
           // when we get payload data from gg, write it to cache and back to game
-          cachedResponse.write(d)
+          cachedResponse.writeBuffer(d)
           gameResp.write(d)
         })
 
