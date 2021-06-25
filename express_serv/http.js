@@ -14,21 +14,32 @@ class CacheLayer {
     this.storage = {}
   }
 
-  _makeKey(req) {
+  setWriteable(req, reqBuffer) {
+    // return a writeable stream for this key-val
+  }
+
+  _makeKey(req, reqBuffer) {
     // hashing the request with
     //    method, url, body
+    const {url, method} = req
+    const body = reqBuffer.readString()
     return hash({url, method, body})
   }
 
-  get(req) {
-    const key = _makeKey(req)
+  get(req, reqBuffer) {
+    const key = _makeKey(req, reqBuffer)
     return this.storage[key]
   }
 
-  contains(req) {
+  contains(req, reqBuffer) {
     // TODO invalidate old requests
-    return _makeKey(req) in this.storage
+    return _makeKey(req, reqBuffer) in this.storage
   }
+}
+var CACHE_LAYER = new CacheLayer()
+
+function getStorage() {
+  return CACHE_LAYER
 }
 
 // create server to gg server
@@ -47,22 +58,7 @@ const app = http.createServer( (gameReq, gameResp) => {
       'connection': 'keep-alive',
     },
   }
-
-  console.log('Finished setting up gg req')
-
-
   // check storage if request already parsed
-
-
-  //const storage = getStorage()
-  //if (storage.contains(gameReq)) {
-  //  const cachedResp = storage.get(gameReq)
-  //  gameResp.headers = cachedResp.headers
-  //  gameResp.statusCode = cachedResp.statusCode
-  //  gameResp.end(cachedResponse.data)
-  //  return
-  //}
-
   var gameReqBuffer = new SmartBuffer()
 
   gameReq.on('data', (d) => {
@@ -119,6 +115,9 @@ const app = http.createServer( (gameReq, gameResp) => {
       ggReq.end(gameReqBuffer.toBuffer())
     }
 
-    app.listen(3000, () => {
-      console.log(`Listening on ${port}`)
-    });
+  })
+})
+
+app.listen(3000, () => {
+  console.log(`Listening on ${port}`)
+});
