@@ -16,15 +16,25 @@ class CacheLayer {
 
   setWriteable(req, reqBuffer) {
     const key = this._makeKey(req, reqBuffer)
-    this.storage[key] = new SmartBuffer()
-    return this.storage[key]
+
+    var item = {
+      buffer: new SmartBuffer(),
+      headers: '',
+      statusCode: ''
+    }
+    this.storage[key] = item
+    return item
   }
 
   _makeKey(req, reqBuffer) {
     // hashing the request with
     //    method, url, body
     const {url, method} = req
-    const body = reqBuffer.readString()
+    const body = reqBuffer.toString()
+
+    console.log({reqBuffer})
+    console.log({url, method, body})
+    console.log(hash({url, method, body}))
     return hash({url, method, body})
   }
 
@@ -35,7 +45,8 @@ class CacheLayer {
 
   contains(req, reqBuffer) {
     // TODO invalidate old requests
-    return this._makeKey(req, reqBuffer) in this.storage
+    const key = this._makeKey(req, reqBuffer)
+    return key in this.storage
   }
 }
 var CACHE_LAYER = new CacheLayer()
@@ -68,12 +79,14 @@ const app = http.createServer( (gameReq, gameResp) => {
 
   gameReq.on('end', () => {
     let storage = getStorage()
+    console.log({gameReqBuffer})
     if (storage.contains(gameReq, gameReqBuffer)) {
       // return cached resp
       console.log(`Cache hit: ${gameReq.url} ${gameReq.method} ${gameReqBuffer.toBuffer()}`)
-      gameResp.headers = ggResp.headers
-      gameResp.statusCode = ggResp.statusCode
-      gameResp.end(gameReqBuffer.toBuffer())
+      let cachedResponse = storage.get(gameReq, gameReqBuffer)
+      gameResp.headers = cachedResponse.headers
+      gameResp.statusCode = cachedResponse.statusCode
+      gameResp.end(cachedResponse.buffer.toBuffer())
     }
 
     else {
@@ -87,7 +100,7 @@ const app = http.createServer( (gameReq, gameResp) => {
 
         ggResp.on('data', d => {
           // when we get payload data from gg, write it to cache and back to game
-          cachedResponse.writeBuffer(d)
+          cachedResponse.buffer.writeBuffer(d)
           gameResp.write(d)
         })
 
@@ -96,6 +109,9 @@ const app = http.createServer( (gameReq, gameResp) => {
           gameResp.headers = ggResp.headers
           gameResp.statusCode = ggResp.statusCode
           gameResp.end()
+
+          cachedResponse.headers = ggResp.headers
+          cachedResponse.statusCode = ggResp.statusCode
         })
 
         ggResp.on('error', e => {
