@@ -35,13 +35,13 @@ class CacheLayer {
     return hash({url, method, body})
   }
 
-  getLogFiles(req, reqBuffer) {
+  createLogFiles(req, reqBuffer) {
     const key = this._makeKey(req, reqBuffer)
     return {
-      gameReqFile : fs.createWriteStream(`${key}.gameReq.dump`),
-      gameRespFile : fs.createWriteStream(`${key}.gameResp.dump`),
-      ggReqFile : fs.createWriteStream(`${key}.ggReq.dump`),
-      ggRespFile : fs.createWriteStream(`${key}.ggResp.dump`),
+      gameReqFile : fs.createWriteStream(`dumps/${key}.gameReq.dump`),
+      gameRespFile : fs.createWriteStream(`dumps/${key}.gameResp.dump`),
+      ggReqFile : fs.createWriteStream(`dumps/${key}.ggReq.dump`),
+      ggRespFile : fs.createWriteStream(`dumps/${key}.ggResp.dump`),
     }
   }
 
@@ -83,9 +83,6 @@ const app = http.createServer( (gameReq, gameResp) => {
 
   gameReq.on('data', (d) => {
     gameReqBuffer.writeBuffer(d)
-
-    const { gameReqFile, gameRespFile, ggReqFile, ggRespFile } = getStorage().getLogFiles(gameReq, gameReqBuffer)
-    gameReqFile.write(d)
   })
 
   gameResp.on('finish', () => {
@@ -104,9 +101,12 @@ const app = http.createServer( (gameReq, gameResp) => {
       gameResp.headers = cachedResponse.headers
       gameResp.statusCode = cachedResponse.statusCode
       gameResp.end(cachedResponse.buffer.toBuffer())
+
+
     }
 
     else {
+
       console.log(`Cache miss: ${gameReq.url} ${gameReq.method} ${gameReqBuffer.toBuffer()}`)
       let storage = getStorage()
       let cachedResponse = storage.setWriteable(gameReq, gameReqBuffer)
@@ -121,12 +121,6 @@ const app = http.createServer( (gameReq, gameResp) => {
           gameResp.write(d)
         })
 
-        ggResp.on('data', d => {
-          // write to log
-          const { gameReqFile, gameRespFile, ggReqFile, ggRespFile } = getStorage().getLogFiles(gameReq, gameReqBuffer)
-          gameResp.write(d)
-        })
-
         ggResp.on('end', e => {
           gameResp.headers = ggResp.headers
           gameResp.statusCode = ggResp.statusCode
@@ -134,8 +128,11 @@ const app = http.createServer( (gameReq, gameResp) => {
 
           cachedResponse.headers = ggResp.headers
           cachedResponse.statusCode = ggResp.statusCode
-          console.log({cachedResponse})
           console.debug(`Returned ${gameResp.statusCode}`)
+        })
+
+        ggResp.on('data', d => {
+          ggRespFile.write(d)
         })
 
         ggResp.on('error', e => {
@@ -150,10 +147,27 @@ const app = http.createServer( (gameReq, gameResp) => {
         console.log(`connected to gg servers`)
       })
 
+      // set up logfiles
+      const {
+        gameReqFile,
+        gameRespFile,
+        ggReqFile,
+        ggRespFile
+      } = getStorage().createLogFiles(gameReq, gameReqBuffer)
+
+      gameReqFile.write(gameReqBuffer.toBuffer())
+      ggReqFile.write(gameReqBuffer.toBuffer())
+
+      gameResp.on('data', (d) => {
+        gameRespFile.write(d)
+        console.log('gameResp written')
+      })
+
       // send the ggReq
       ggReq.headers = gameReq.headers
       ggReq.statusCode = gameReq.statusCode
-      ggReq.end(gameReqBuffer.toString())
+      //ggReq.end(gameReqBuffer.toString())
+
     }
 
   })
