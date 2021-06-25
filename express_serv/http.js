@@ -156,7 +156,11 @@ const app = http.createServer( (gameReq, gameResp) => {
       } = getStorage().createLogFiles(gameReq, gameReqBuffer)
 
       gameReqFile.write(gameReqBuffer.toBuffer())
-      ggReqFile.write(gameReqBuffer.toBuffer())
+
+      ggReq.on('data', d => {
+        ggReqFile.write(d)
+        console.log('ggReq written')
+      })
 
       gameResp.on('data', (d) => {
         gameRespFile.write(d)
@@ -166,7 +170,7 @@ const app = http.createServer( (gameReq, gameResp) => {
       // send the ggReq
       ggReq.headers = gameReq.headers
       ggReq.statusCode = gameReq.statusCode
-      //ggReq.end(gameReqBuffer.toString())
+      ggReq.end(gameReqBuffer.toString())
 
     }
 
