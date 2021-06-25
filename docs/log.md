@@ -21,5 +21,5 @@ I need to switch from nextjs to a more raw router. I'll switch to expressjs
 ## 06/24/2021
 
 instead of using expressjs, i'll more something more raw to get the exact
-payload sent through.
+payload sent through. https.
 
