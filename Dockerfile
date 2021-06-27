@@ -1,11 +1,12 @@
 FROM node:14
 
-WORKDIR ./express_serv
+COPY ./express_serv /gg-struggle/
+COPY ./express_serv/* /gg-struggle/
 
-copy ./package.json ./
+WORKDIR /gg-struggle/
 
-run npm install
+RUN cd /gg-struggle/;  npm install
 
 EXPOSE 3000
 
-CMD [ "node", "https.js" ]
+CMD [ "node", "http.js" ]
