@@ -17,6 +17,15 @@ stale data.
 
 ## TODO
 
+[ ] deployment
+[ ] client patch to use different url (search resource files)
+[ ] spoof get_env
+[ ] native https support
+[ ] invalidate the cache after 1 day
+[ ] on cache hits, refresh cache asynchronously
+
+[x] use nodejs https module
+[ ] ~~switch to expressjs for header-mirroring~~
 [x] Monitor client traffic with wireshark
 [x] Boot kali, run mitmdump between localhost and gg server
   - save keylogs to file
@@ -28,12 +37,16 @@ stale data.
   [x] play opponent
 [x] save logs and keyfile
 [x] decrypt wireshark traffic with keyfile
+<<<<<<< HEAD
 [ ] map post request w/ data -> server response json payload
+=======
+[x] map post request w/ data -> server response json payload
+>>>>>>> express
   - save as raw json file
-[ ] create router to serve cached results from file (nextjs)
-  [ ] hit real gg server for cache misses
-[ ] create patch to use cache server (hosts file?)
-  [ ] cert as well
+[x] create router to serve cached results from file (nextjs)
+  [x] hit real gg server for cache misses
+[x] create patch to use cache server (hosts file?)
+  [x] cert as well
 
 ## Testing
 
