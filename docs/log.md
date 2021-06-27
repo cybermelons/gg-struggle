@@ -21,5 +21,19 @@ I need to switch from nextjs to a more raw router. I'll switch to expressjs
 ## 06/24/2021
 
 instead of using expressjs, i'll more something more raw to get the exact
-payload sent through. https.
+payload sent through. node's native http module
 
+## 06/25/2021
+
+dockerized
+
+## 06/26/2021
+
+tried patching the game to use my own server, but steam didn't want to run a
+different .exe. Decided to go with the good ol' hosts file spoofing trick.
+this just requires the user to edit the file and add a self-signed certificate,
+which is pretty risky. So run your own server.
+
+## 06/27/2021
+
+works now. To use self signed certs, I can configure Caddy to use them.
