@@ -1,5 +1,4 @@
 const https = require('https')
-const http = require('http')
 const hash = require('object-hash')
 const fs = require('fs')
 const SmartBuffer = require('smart-buffer').SmartBuffer;
@@ -62,10 +61,25 @@ function getStorage() {
   return CACHE_LAYER
 }
 
+var ssl_key;
+var ssl_cert;
+
+try {
+  ssl_key = fs.readFileSync(process.env.SSL_KEY)
+  ssl_cert = fs.readFileSync(process.env.SSL_CERT)
+  console.log(`Using SSL_KEY: ${process.env.SSL_KEY}`)
+  console.log(`Using SSL_CERT: ${process.env.SSL_CERT}`)
+}
+catch (err) {
+  console.error(`Caught error reading certs: ${err}`)
+}
+
 // create server to gg server
-const app = http.createServer( (gameReq, gameResp) => {
+const app = https.createServer( (gameReq, gameResp) => {
   console.time('gg-struggle api request')
   const options = {
+    key: ssl_key,
+    cert: ssl_key_cert,
     hostname: 'ggst-game.guiltygear.com',
     port: 443,
     path: gameReq.url,
