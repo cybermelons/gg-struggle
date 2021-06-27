@@ -15,7 +15,7 @@ ipconfig /flushdns
 ```
 
 
-3. Download this certifciate file and install on winddows under Trusted Root Certificates: [click here](windows.p12). This will allow your computer to trust the proxy server.
+3. Download this certifciate file and install on winddows under Trusted Root Certificates: [click here](ggwin.p12). This will allow your computer to trust the proxy server.
 
 4. Run guilty gear. The first time it loads will be slow but every other time after should be faster.
 
