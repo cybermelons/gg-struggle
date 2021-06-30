@@ -1,5 +1,5 @@
-const https = require('https')
 const http = require('http')
+const https = require('https')
 const hash = require('object-hash')
 const fs = require('fs')
 const SmartBuffer = require('smart-buffer').SmartBuffer;
@@ -133,26 +133,8 @@ function isUsingHttps() {
   return process.env.GGST_SSL_CERT && process.env.GGST_SSL_KEY
 }
 
-// Use HTTPS if specified
-var createServer = http.createServer;
-var serverOpts = {
-  port: 3000
-}
 
-if (isUsingHttps()) {
-  console.log('Enabling HTTPS')
-  createserver = https.createServer
-  serverOpts = {
-    ...serverOpts,
-    key: fs.readFileSync(process.env.GGST_SSL_KEY),
-    cert: fs.readFileSync(process.env.GGST_SSL_CERT),
-    ca: fs.readFileSync(process.env.GGST_SSL_CERT),
-    port: 443
-  }
-}
-
-
-const app = createServer( serverOpts, (gameReq, gameResp) => {
+function handleGameReq(gameReq, gameResp) {
   console.time('gg-struggle api request')
   // time the response
   gameResp.on('finish', () => {
@@ -193,13 +175,36 @@ const app = createServer( serverOpts, (gameReq, gameResp) => {
     }
 
   })
-})
+}
+
+
+
+let createServer = http.createServer
+let serverOpts = {
+  port: 3000
+}
+
+// Use HTTPS if specified
+if (isUsingHttps()) {
+  console.log('Enabling HTTPS')
+  createServer = https.createServer
+  serverOpts = {
+    ...serverOpts,
+    key: fs.readFileSync(process.env.GGST_SSL_KEY),
+    cert: fs.readFileSync(process.env.GGST_SSL_CERT),
+    enableTrace: true,
+  }
+}
+
+let app = createServer(serverOpts, handleGameReq)
+
 
 app.listen(serverOpts, () => {
   console.log(`Listening on ${serverOpts.port}`)
 })
 
-app.on('tlsClientError', (e, tlsSocket) => {
+app.on('clientError', (e, socket) => {
   console.error(`Error connecting client via TLS: ${e}`)
 })
+
 
