@@ -1,13 +1,13 @@
 #!/bin/bash
 
-set -x
 set -e
 
 CA_CNF=$PWD/CA.cnf
 SERVER_CNF=$PWD/localhost.cnf
 
 # Generate a CA private key and Certificate (valid for 5 years)
-mkdir -p certs && cd certs
+mkdir -p certs
+cd certs
 openssl req -nodes -new -x509 -keyout CA_key.pem -out CA_cert.pem -days 1825 -config $CA_CNF
 
 # Generate web server secret key and CSR
@@ -35,8 +35,3 @@ openssl x509 \
   -CA CA_cert.pem \
   -CAkey CA_key.pem \
   -CAcreateserial
-
-# Once the certificate is generated, it can be used to generate a .pfx or .p12 file:
-
-openssl pkcs12 -export -in ggstruggle-cert.pem -inkey ggstruggle-key.pem \
-      -out ggwin.p12
