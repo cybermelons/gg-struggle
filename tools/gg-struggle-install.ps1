@@ -2,60 +2,74 @@
 
 # TODO: Resolve IP via DNS
 $proxyIp = "144.217.72.171"
-$hostProxyString = "$hostProxyString ggst-game.guiltygear.com"
+$mainHost = "ggst-game.guiltygear.com"
+$hostProxyString = "$hostProxyString $mainHost"
+$certPath = "C:\\temp\\ggwin.p12" # TODO: this is if you're in the same directory, but we can resolve this later
 $certThumbprint
 
 function Install-GgstProxy {
+    Write-Host 'Testing connection to $proxyIp...';
     if(Test-Connection $proxyIp -Quiet -Count 1)
     {
+        Write-Host "Successfully connected."
+        Write-Host "Installing hostfile map for $mainHost"
         Add-Content -Encoding UTF8  C:\Windows\system32\drivers\etc\hosts $hostProxyString
+        
+        Write-Host "Opening certificate file $certPath";
+        #$p12 = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2
+        $p12 = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2Collection
+        $certPath = $certPath
+        $pfxPass = ""
+        $p12.Import($certPath,$pfxPass,"Exportable,PersistKeySet")
+        
+        Write-Host "Installing Cert $certPath certificate to trusted store.";
+        $store = New-Object System.Security.Cryptography.X509Certificates.X509Store([System.Security.Cryptography.X509Certificates.StoreName]::Root,"LocalMachine")
+        $store.Open("MaxAllowed")
+        
+        #$store.Add($p12)
+        $store.AddRange($p12)
+        $store.Close()
+        
+        Write-Host 'Cert installed.';
     }
     else
     {
         Write-Error "Failed to connect to host $proxyIp"
     }
-
-    # Install Cert
-    $p12 = new-object System.Security.Cryptography.X509Certificates.X509Certificate2
-    $certPath = "./ggwin.p12" # TODO: this is if you're in the same directory, but we can resolve this later
-    $pfxPass = ""
-    $p12.Import($certPath,$pfxPass,"Exportable,PersistKeySet")
-
-    $store = New-Object System.Security.Cryptography.X509Certificates.X509Store([System.Security.Cryptography.X509Certificates.StoreName]::Root,"LocalMachine")
-    $store.Open("MaxAllowed")
-    $store.Add($pfx)
-    $store.Close()
 }
 
 function Uninstall-GgstProxy
 {
+    Write-Host "Removing hostfile map for $mainHost"
     $op = (Get-Content C:\Windows\system32\drivers\etc\hosts) | Where-Object { $_ -ne $hostProxyString}
     Write-Output $op | Out-File -Encoding UTF8 C:\Windows\system32\drivers\etc\hosts
 
-    # Uninstall Cert
-    $p12 = new-object System.Security.Cryptography.X509Certificates.X509Certificate2
-    $certPath = "./ggwin.p12" # this is if you're in the same directory, but we can resolve this later #TODO
+    Write-Host "Removing certificate $certPath"
+    #$p12 = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2
+    $p12 = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2Collection
+    $certPath = $certPath
     $pfxPass = ""
     $p12.Import($certPath,$pfxPass,"Exportable,PersistKeySet")
-
+    
     $store = New-Object System.Security.Cryptography.X509Certificates.X509Store([System.Security.Cryptography.X509Certificates.StoreName]::Root,"LocalMachine")
-    $store.Open("MaxAllowed")
-    $store.Remove($p12)
+    $store.Open("MaxAllowed") 
+    #$store.Remove($p12)
+    $store.RemoveRange($p12)
     $store.Close()
 }
 
-
-while {
+$end = $false;
+while (!($end)) {
     Write-Host '1. Install GgstProxy';
     Write-Host '2. Uninstall GgstProxy';
     Write-Host '3. Exit';
     $input = Read-Host
-
+    
     switch($input)
     {
         "1" {Install-GgstProxy}
         "2" {Uninstall-GgstProxy}
-        "3" {break}
+        "3" {$end = $true}
     }
 }
 
