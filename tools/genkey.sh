@@ -3,8 +3,12 @@
 set -x
 set -e
 
+CA_CNF=$PWD/CA.cnf
+SERVER_CNF=$PWD/localhost.cnf
+
 # Generate a CA private key and Certificate (valid for 5 years)
-openssl req -nodes -new -x509 -keyout CA_key.pem -out CA_cert.pem -days 1825 -config CA.cnf
+mkdir -p certs && cd certs
+openssl req -nodes -new -x509 -keyout CA_key.pem -out CA_cert.pem -days 1825 -config $CA_CNF
 
 # Generate web server secret key and CSR
 
@@ -17,13 +21,20 @@ openssl genrsa -out ggstruggle-key.pem 2048
 
 # The OpenSSL command-line interface can be used to generate a CSR for a private key:
 
-openssl req -new -sha256 -key ggstruggle-key.pem -out ggstruggle-csr.pem -config localhost.cnf
+openssl req -new -sha256 -key ggstruggle-key.pem -out ggstruggle-csr.pem -config $SERVER_CNF
 
 # Once the CSR file is generated, it can either be sent to a Certificate Authority for signing or used to generate a self-signed certificate.
 
 # Creating a self-signed certificate using the OpenSSL command-line interface is illustrated in the example below:
 
-openssl x509 -req -in ggstruggle-csr.pem -signkey ggstruggle-key.pem -out ggstruggle-cert.pem
+openssl x509 \
+  -req \
+  -in ggstruggle-csr.pem \
+  -signkey ggstruggle-key.pem \
+  -out ggstruggle-cert.pem \
+  -CA CA_cert.pem \
+  -CAkey CA_key.pem \
+  -CAcreateserial
 
 # Once the certificate is generated, it can be used to generate a .pfx or .p12 file:
 
