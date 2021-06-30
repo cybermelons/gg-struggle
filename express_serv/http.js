@@ -15,18 +15,6 @@ class CacheLayer {
     this.storage = {}
   }
 
-  setWriteable(req, reqBuffer) {
-    const key = this._makeKey(req, reqBuffer)
-
-    var item = {
-      buffer: new SmartBuffer(),
-      headers: '',
-      statusCode: ''
-    }
-    this.storage[key] = item
-    return item
-  }
-
   _makeKey(req, reqBuffer) {
     // hashing the request with
     //    method, url, body
@@ -51,12 +39,16 @@ class CacheLayer {
     const key = this._makeKey(req, reqBuffer)
 
     if (this.contains(req, reqBuffer)) {
+      let payload = this.storage[key]
       callback(this.storage[key])
 
       // refresh in the background
-      this.fetchGg(req, reqBuffer, (data) => {
-        this.storage[key] = data
-      })
+      const expireTime = 1000 * 60 * 60 * 60 // 1 hr
+      if (Date.now() > payload.time + expireTime) {
+        this.fetchGg(req, reqBuffer, (data) => {
+          this.storage[key] = data
+        })
+      }
     }
 
     else {
@@ -86,6 +78,7 @@ class CacheLayer {
     }
 
     // create ggRequest
+    console.time(`gg-req ${key}`)
     const ggReq = https.request(options, (ggResp) => {
       console.debug(`Attempting to get ggResponse`)
 
@@ -93,7 +86,8 @@ class CacheLayer {
       let cachedResp = {
         headers: ggResp.headers,
         statusCode: ggResp.statusCode,
-        buffer: new SmartBuffer()
+        time: Date.now(),
+        buffer: new SmartBuffer(),
       }
 
       ggResp.on('data', d => {
@@ -105,6 +99,7 @@ class CacheLayer {
         console.debug(`Writing ${req.url} ${req.method} ${key} to cache`)
         this.storage[key] = cachedResp
         callback(cachedResp)
+        console.timeEnd(`gg-req ${key}`)
       })
 
       ggResp.on('error', e => {
@@ -112,6 +107,7 @@ class CacheLayer {
 
         console.error(`Bailed on caching response from GG`)
         delete this.storage[key]
+        console.timeEnd(`gg-req ${key}`)
       })
     })
 
