@@ -12,7 +12,7 @@ stale data.
 
 ## public release checklist
 
-[ ] cert regeneration
+[x] cert regeneration
   - be ggst-game.guiltygear.com specific
 [ ] log requests
   - payload data
