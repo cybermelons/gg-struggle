@@ -1,8 +1,3 @@
-Here's what I'll do. I'll take notes in a docs/ directory of whatever project
-I'm working on (gg struggle in this case) and compile it as part of the project.
-
-Notes outside of any one project can go in its own devlog repo.
-
 # Plan
 
 ## **WIP** Problem
@@ -17,12 +12,12 @@ stale data.
 
 ## TODO
 
-[ ] deployment
-[ ] client patch to use different url (search resource files)
-[ ] spoof get_env
-[ ] native https support
 [ ] invalidate the cache after 1 day
 [ ] on cache hits, refresh cache asynchronously
+[x] deployment
+[ ] ~~client patch to use different url (search resource files)~~
+[ ] spoof get_env
+[x] native https support (caddy)
 
 [x] use nodejs https module
 [ ] ~~switch to expressjs for header-mirroring~~
@@ -37,11 +32,7 @@ stale data.
   [x] play opponent
 [x] save logs and keyfile
 [x] decrypt wireshark traffic with keyfile
-<<<<<<< HEAD
-[ ] map post request w/ data -> server response json payload
-=======
 [x] map post request w/ data -> server response json payload
->>>>>>> express
   - save as raw json file
 [x] create router to serve cached results from file (nextjs)
   [x] hit real gg server for cache misses
@@ -57,18 +48,10 @@ with `-x` can suffice for now.
 We will order our tests based on oldest request time first. We want to follow
 the same order of requests the game goes through.
 
-## Limitations
+## Cache Management
 
-Theoretically, this works up to the point of joining lobbies. I don't have
-enough data to understand how the payload works, which is why I'm still logging.
-I suspect that for playing actual matches, the gg-server takes two players
-requests to join a lobby id. On handshake with the gg-server, the players are
-given each other's IPs to P2P game.
-
-Other limitations we will run into like cache misses. Any feature unaccounted
-for will have its own special log designation to implement as a test later.
-
-We're also gonna find out how well GG handles stale data.
+Right now, the cache is a map of raw requests to its payload.
+Other than that
 
 ## Logging
 
@@ -84,8 +67,5 @@ Map the request to list of json strings.
 
 ## Bugs
 
-If the game crashes or gives some server issue, we need to know what time that
-happened and to who. Then we can check our logs for it.
 
-If it doesn’t work, user needs to ping devs immediately.  Canned data needs
-to be recached.
+

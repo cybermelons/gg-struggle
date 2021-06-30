@@ -25,7 +25,19 @@ Then explicitly select "Place all certificates in the following store" >
 
 # Issues
 
-The server doesn't ever refresh the cache. Over time the game stats and lobbies might start being incorrect due to stale data. I'm gonna implement cache-invalidation after like, a day or two.
+> The server doesn't ever refresh the cache.
 
-Also, using a self-signed cert randomly downloaded from the internet makes
-yourself vulnerable to other sites spoofing domain names.
+Over time the game stats and lobbies might start being incorrect due to stale data. I'm gonna implement cache-invalidation after like, a day or two.
+
+> Using a self-signed cert
+
+Downloading a self-signed cert by me says that you trust that MY servers are
+whoever they say they are. If my server says that it's the real
+`guiltygear.com`, you have to believe it because you're using my cert.
+
+This isn't _that_ risky, because I'd also have to try to spoof other websites
+you specified in your hosts file. But it's best that this be run locally
+with their own keys.
+
+
+

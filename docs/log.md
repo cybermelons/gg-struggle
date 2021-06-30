@@ -37,3 +37,13 @@ which is pretty risky. So run your own server.
 ## 06/27/2021
 
 works now. To use self signed certs, I can configure Caddy to use them.
+
+## 06/29/2021
+
+Today I'm going to try
+
+- install powershell script
+  - windows fallback for guiltygear server
+  - package
+- refresh the cache asynchronously on each call
+- optionally only cache startup request

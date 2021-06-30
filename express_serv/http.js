@@ -1,4 +1,5 @@
 const https = require('https')
+const http = require('http')
 const hash = require('object-hash')
 const fs = require('fs')
 const SmartBuffer = require('smart-buffer').SmartBuffer;
@@ -44,9 +45,83 @@ class CacheLayer {
     }
   }
 
-  get(req, reqBuffer) {
+  get(req, reqBuffer, callback) {
+    // TODO this could be done with event handlers
+    // need get to return the buffer
     const key = this._makeKey(req, reqBuffer)
-    return this.storage[key]
+
+    if (this.contains(req, reqBuffer)) {
+      callback(this.storage[key])
+
+      // refresh in the background
+      this.fetchGg(req, reqBuffer, (data) => {
+        this.storage[key] = data
+      })
+    }
+
+    else {
+      this.fetchGg(req, reqBuffer, (data) => {
+        this.storage[key] = data
+        callback(data)
+      })
+    }
+
+    // make an async request to update the cache
+
+  }
+
+  fetchGg(req, reqBuffer, callback) {
+    const key = this._makeKey(req, reqBuffer)
+    const options = {
+      hostname: 'ggst-game.guiltygear.com',
+      port: 443,
+      path: req.url,
+      method: req.method,
+      headers: {
+        'user-agent': 'Steam',
+        'accept': '*/*',
+        'content-type': 'application/x-www-form-urlencoded',
+        'connection': 'keep-alive',
+      },
+    }
+
+    // create ggRequest
+    const ggReq = https.request(options, (ggResp) => {
+      console.debug(`Attempting to get ggResponse`)
+
+      // set headers before any writing happens
+      let cachedResp = {
+        headers: ggResp.headers,
+        statusCode: ggResp.statusCode,
+        buffer: new SmartBuffer()
+      }
+
+      ggResp.on('data', d => {
+        // when we get payload data from gg, write it to cache and back to game
+        cachedResp.buffer.writeBuffer(d)
+      })
+
+      ggResp.on('end', (e) => {
+        console.debug(`Writing ${req.url} ${req.method} ${key} to cache`)
+        this.storage[key] = cachedResp
+        callback(cachedResp)
+      })
+
+      ggResp.on('error', e => {
+        console.error(`Error in response from gg servers: ${e}`)
+
+        console.error(`Bailed on caching response from GG`)
+        delete this.storage[key]
+      })
+    })
+
+    // send the request.
+    ggReq.headers = req.headers
+    ggReq.statusCode = req.statusCode
+    ggReq.key = key
+    ggReq.end(reqBuffer.toBuffer())
+
+    return ggReq;
   }
 
   contains(req, reqBuffer) {
@@ -61,31 +136,10 @@ function getStorage() {
   return CACHE_LAYER
 }
 
-
 // create server to gg server
-const app = https.createServer( (gameReq, gameResp) => {
+const app = http.createServer( (gameReq, gameResp) => {
   console.time('gg-struggle api request')
-  const options = {
-    key: process.env.SSL_KEY,
-    cert: process.env.SSL_CERT,
-    hostname: 'ggst-game.guiltygear.com',
-    port: 443,
-    path: gameReq.url,
-    method: gameReq.method,
-    headers: {
-      'user-agent': 'Steam',
-      'accept': '*/*',
-      'content-type': 'application/x-www-form-urlencoded',
-      'connection': 'keep-alive',
-    },
-  }
-  // check storage if request already parsed
-  var gameReqBuffer = new SmartBuffer()
-
-  gameReq.on('data', (d) => {
-    gameReqBuffer.writeBuffer(d)
-  })
-
+  // time the response
   gameResp.on('finish', () => {
     console.timeEnd('gg-struggle api request')
   })
@@ -94,96 +148,38 @@ const app = https.createServer( (gameReq, gameResp) => {
     console.timeEnd('gg-struggle api request')
   })
 
-  gameReq.on('end', () => {
-    let storage = getStorage()
-    const key = storage._makeKey(gameReq, gameReqBuffer)
+  // store the incoming request stream into a buffer
+  var gameReqBuffer = new SmartBuffer()
+  gameReq.on('data', (d) => {
+    gameReqBuffer.writeBuffer(d)
+  })
 
+
+  // then once the buffer is filled, start processing
+  // TODO put this into a function
+  gameReq.on('end', () => {
+
+    const storage = getStorage()
+
+    storage.get(gameReq, gameReqBuffer, (data) => {
+      gameResp.writeHead(data.statusCode, data.headers)
+      gameResp.end(data.buffer.toBuffer())
+    })
+
+    const key = getStorage()._makeKey(gameReq, gameReqBuffer)
     console.log(`[GAMEREQ] ${gameReq.url} ${gameReq.method} ${key}`)
 
     if (storage.contains(gameReq, gameReqBuffer)) {
       // return cached resp
       console.log(`Cache hit: ${gameReq.url} ${gameReq.method} ${gameReqBuffer.toBuffer()}`)
-      let cachedResponse = storage.get(gameReq, gameReqBuffer)
-      gameResp.writeHead(cachedResponse.statusCode, cachedResponse.headers)
-      gameResp.end(cachedResponse.buffer.toBuffer())
     }
-
     else {
       console.log(`Cache miss: ${gameReq.url} ${gameReq.method} ${gameReqBuffer.toBuffer()}`)
-      let storage = getStorage()
-      let cachedResponse = storage.setWriteable(gameReq, gameReqBuffer)
-
-      // create ggRequest
-      const ggReq = https.request(options, (ggResp) => {
-        console.debug(`Attempting to get ggResponse`)
-
-        // set headers before any writing happens
-        gameResp.headers = ggResp.headers
-        gameResp.statusCode = ggResp.statusCode
-        gameResp.writeHead(ggResp.statusCode, ggResp.headers)
-
-        ggResp.on('data', d => {
-          // when we get payload data from gg, write it to cache and back to game
-          cachedResponse.buffer.writeBuffer(d)
-          gameResp.write(d)
-          gameRespFile.write(d)
-        })
-
-        ggResp.on('end', (e) => {
-          gameResp.end()
-
-          cachedResponse.headers = ggResp.headers
-          cachedResponse.statusCode = ggResp.statusCode
-          console.debug(`Returned ${gameResp.statusCode}`)
-        })
-
-        ggResp.on('data', d => {
-          ggRespFile.write(d)
-        })
-
-        ggResp.on('error', e => {
-          gameResp.headers = ggResp.headers
-          gameResp.statusCode = ggResp.statusCode
-          gameResp.writeHead(503)
-          gameResp.end()
-
-          console.error(`Error in response from gg servers: ${e}`)
-        })
-      })
-
-      ggReq.on('error', (e) => {
-        console.error(`Error making request to gg servers: ${e}`)
-      })
-      ggReq.on('connect', d => {
-        console.log(`connected to gg servers`)
-      })
-
-      // set up logfiles
-      const {
-        gameReqFile,
-        gameRespFile,
-        ggReqFile,
-        ggRespFile
-      } = getStorage().createLogFiles(gameReq, gameReqBuffer)
-
-      gameReqFile.write(gameReqBuffer.toBuffer())
-      ggReqFile.write(gameReqBuffer.toBuffer())
-
-      gameResp.on('data', (d) => {
-        gameRespFile.write(d)
-        console.log('gameResp written')
-      })
-
-      // send the ggReq
-      ggReq.headers = gameReq.headers
-      ggReq.statusCode = gameReq.statusCode
-      ggReq.end(gameReqBuffer.toString())
-
     }
 
   })
 })
 
-app.listen(3000, () => {
+app.listen(port, () => {
   console.log(`Listening on ${port}`)
 });
