@@ -193,6 +193,7 @@ if (isUsingHttps()) {
     key: fs.readFileSync(process.env.GGST_SSL_KEY),
     cert: fs.readFileSync(process.env.GGST_SSL_CERT),
     enableTrace: true,
+    port: 443
   }
 }
 
