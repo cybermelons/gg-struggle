@@ -4,7 +4,6 @@ const hash = require('object-hash')
 const fs = require('fs')
 const SmartBuffer = require('smart-buffer').SmartBuffer;
 
-const PORT = 3000
 const EXPIRE_TIME_MS = 1000 * 60 * 60 * 60 * 24 // max cache-age: 1 day
 
 
@@ -130,8 +129,30 @@ function getStorage() {
   return CACHE_LAYER
 }
 
-// create server to gg server
-const app = http.createServer( (gameReq, gameResp) => {
+function isUsingHttps() {
+  return process.env.GGST_SSL_CERT && process.env.GGST_SSL_KEY
+}
+
+// Use HTTPS if specified
+var createServer = http.createServer;
+var serverOpts = {
+  port: 3000
+}
+
+if (isUsingHttps()) {
+  console.log('Enabling HTTPS')
+  createserver = https.createServer
+  serverOpts = {
+    ...serverOpts,
+    key: fs.readFileSync(process.env.GGST_SSL_KEY),
+    cert: fs.readFileSync(process.env.GGST_SSL_CERT),
+    ca: fs.readFileSync(process.env.GGST_SSL_CERT),
+    port: 443
+  }
+}
+
+
+const app = createServer( serverOpts, (gameReq, gameResp) => {
   console.time('gg-struggle api request')
   // time the response
   gameResp.on('finish', () => {
@@ -174,6 +195,11 @@ const app = http.createServer( (gameReq, gameResp) => {
   })
 })
 
-app.listen(PORT, () => {
-  console.log(`Listening on ${PORT}`)
-});
+app.listen(serverOpts, () => {
+  console.log(`Listening on ${serverOpts.port}`)
+})
+
+app.on('tlsClientError', (e, tlsSocket) => {
+  console.error(`Error connecting client via TLS: ${e}`)
+})
+
