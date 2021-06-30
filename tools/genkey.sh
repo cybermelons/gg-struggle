@@ -39,4 +39,4 @@ openssl x509 \
 # Once the certificate is generated, it can be used to generate a .pfx or .p12 file:
 
 openssl pkcs12 -export -in ggstruggle-cert.pem -inkey ggstruggle-key.pem \
-      -certfile CA_cert.pem -out ggwin.p12
+      -out ggwin.p12
