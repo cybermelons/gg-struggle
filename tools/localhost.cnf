@@ -7,10 +7,10 @@ prompt = no
 
 [req_distinguished_name]
 countryName = US
-stateOrProvinceName = Localzone
-localityName = Localhost
-organizationName = Certificate signed by my CA
-commonName = localhost.localdomain
+stateOrProvinceName = CA
+localityName = The Ocean
+organizationName = Jellyfish Pirates
+commonName = ggst-game.guiltygear.com
 
 [req_ext]
 subjectAltName = @alt_names

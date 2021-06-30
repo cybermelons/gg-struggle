@@ -1,19 +1,12 @@
 #!/bin/bash
 
+set -x
 set -e
 
 # Generate a CA private key and Certificate (valid for 5 years)
 openssl req -nodes -new -x509 -keyout CA_key.pem -out CA_cert.pem -days 1825 -config CA.cnf
 
 # Generate web server secret key and CSR
-echo "Generating web server secret key and CSR"
-openssl req -sha256 -nodes -newkey rsa:2048 -keyout localhost_key.pem -out localhost.csr -config localhost.cnf
-
-# Create cert aqnd sign with CA
-echo "Creasting cert and siginin with CA"
-openssl x509 -req -days 398 -in localhost.csr -CA CA_cert.pem -CAkey CA_key.pem -CAcreateserial -out localhost_cert.pem -extensions req_ext -extfile localhost.cnf
-
-openssl pkcs12 -export -out ggwin.p12 -inkey localhost_key.pem -in localhost_cert.pem
 
 #openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365
 
@@ -24,7 +17,7 @@ openssl genrsa -out ggstruggle-key.pem 2048
 
 # The OpenSSL command-line interface can be used to generate a CSR for a private key:
 
-openssl req -new -sha256 -key ggstruggle-key.pem -out ggstruggle-csr.pem
+openssl req -new -sha256 -key ggstruggle-key.pem -out ggstruggle-csr.pem -config localhost.cnf
 
 # Once the CSR file is generated, it can either be sent to a Certificate Authority for signing or used to generate a self-signed certificate.
 
@@ -35,4 +28,4 @@ openssl x509 -req -in ggstruggle-csr.pem -signkey ggstruggle-key.pem -out ggstru
 # Once the certificate is generated, it can be used to generate a .pfx or .p12 file:
 
 openssl pkcs12 -export -in ggstruggle-cert.pem -inkey ggstruggle-key.pem \
-      -certfile ca-cert.pem -out ggwin.pfx
+      -certfile CA_cert.pem -out ggwin.p12
