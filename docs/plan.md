@@ -1,8 +1,3 @@
-Here's what I'll do. I'll take notes in a docs/ directory of whatever project
-I'm working on (gg struggle in this case) and compile it as part of the project.
-
-Notes outside of any one project can go in its own devlog repo.
-
 # Plan
 
 ## **WIP** Problem
@@ -15,11 +10,61 @@ So we're gonna implement a caching mitm server that returns data faster to the
 client as long as its consistent. We'll also see how well the game handles
 stale data.
 
+## public release checklist
+
+[x] cert regeneration
+  - be ggst-game.guiltygear.com specific
+[ ] log requests
+  - payload data
+  - time
+[ ] telemetry
+  - route -> payload sizes
+  - # of requests at once
+[ ] use redis
+
+## optimization
+
+> Investigate expiry time
+
+Less important, larger requests need higher expiry times. So we need to log
+which requests are the largest, and inspect their payload json data.
+
+Answer the question: How long should the defualt expiry time be?
+
+> Configurable route expiry times
+
+For routes that take the longest, we'll set them to the highest expiry times.
+
+Categories for expiry:
+
+small: menus - instant and async
+medium: player data, stats, ranking - 1 hr cache
+big: news, large payloads - 1 day
+
+> Load balance with gun.js
+
+Ideally, each client will run as a node in a P2P caching system. Each node
+will act as a proxy. The data is cached by the users (i.e people running the
+fix).
+
 ## TODO
 
-[ ] switch to expressjs for header-mirroring
-[ ] Monitor client traffic with wireshark
-[ ] Boot kali, run mitmdump between localhost and gg server
+[ ] run locally, self-signed certs
+  - run in-memory
+[ ] gun.js load balancing
+[ ] NA, EU, etc regions
+[ ] log payload sizes per route
+[ ] invalidate the cache after 1 day
+[ ] on cache hits, refresh cache asynchronously
+[x] deployment
+[ ] ~~client patch to use different url (search resource files)~~
+[ ] spoof get_env
+[x] native https support (caddy)
+
+[x] use nodejs https module
+[ ] ~~switch to expressjs for header-mirroring~~
+[x] Monitor client traffic with wireshark
+[x] Boot kali, run mitmdump between localhost and gg server
   - save keylogs to file
   - write output to another file
 [x] Point windows system proxy to mitmdump server
@@ -29,12 +74,12 @@ stale data.
   [x] play opponent
 [x] save logs and keyfile
 [x] decrypt wireshark traffic with keyfile
-[ ] map post request w/ data -> server response json payload
+[x] map post request w/ data -> server response json payload
   - save as raw json file
-[ ] create router to serve cached results from file (nextjs)
-  [ ] hit real gg server for cache misses
-[ ] create patch to use cache server (hosts file?)
-  [ ] cert as well
+[x] create router to serve cached results from file (nextjs)
+  [x] hit real gg server for cache misses
+[x] create patch to use cache server (hosts file?)
+  [x] cert as well
 
 ## Testing
 
@@ -45,18 +90,10 @@ with `-x` can suffice for now.
 We will order our tests based on oldest request time first. We want to follow
 the same order of requests the game goes through.
 
-## Limitations
+## Cache Management
 
-Theoretically, this works up to the point of joining lobbies. I don't have
-enough data to understand how the payload works, which is why I'm still logging.
-I suspect that for playing actual matches, the gg-server takes two players
-requests to join a lobby id. On handshake with the gg-server, the players are
-given each other's IPs to P2P game.
-
-Other limitations we will run into like cache misses. Any feature unaccounted
-for will have its own special log designation to implement as a test later.
-
-We're also gonna find out how well GG handles stale data.
+Right now, the cache is a map of raw requests to its payload.
+Other than that
 
 ## Logging
 
@@ -72,8 +109,5 @@ Map the request to list of json strings.
 
 ## Bugs
 
-If the game crashes or gives some server issue, we need to know what time that
-happened and to who. Then we can check our logs for it.
 
-If it doesn’t work, user needs to ping devs immediately.  Canned data needs
-to be recached.
+
