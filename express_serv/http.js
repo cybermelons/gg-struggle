@@ -4,14 +4,13 @@ const hash = require('object-hash')
 const fs = require('fs')
 const SmartBuffer = require('smart-buffer').SmartBuffer;
 
-const port = 3000
+const PORT = 3000
+const EXPIRE_TIME_MS = 1000 * 60 * 60 * 60 * 24 // max cache-age: 1 day
 
-
-// now to setup storage layer
 
 class CacheLayer {
-  // WIP. for now uses in-memory cache
   constructor() {
+    // TODO use redis or something
     this.storage = {}
   }
 
@@ -42,9 +41,8 @@ class CacheLayer {
       let payload = this.storage[key]
       callback(this.storage[key])
 
-      // refresh in the background
-      const expireTime = 1000 * 60 * 60 * 60 // 1 hr
-      if (Date.now() > payload.time + expireTime) {
+      // refresh payload only after
+      if (Date.now() > payload.time + EXPIRE_TIME_MS) {
         this.fetchGg(req, reqBuffer, (data) => {
           this.storage[key] = data
         })
@@ -176,6 +174,6 @@ const app = http.createServer( (gameReq, gameResp) => {
   })
 })
 
-app.listen(port, () => {
-  console.log(`Listening on ${port}`)
+app.listen(PORT, () => {
+  console.log(`Listening on ${PORT}`)
 });
