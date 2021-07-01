@@ -95,8 +95,7 @@ class CacheLayer {
       console.debug(`Attempting to get ggResponse`)
 
       // set headers before any writing happens
-      let cachedResp = {
-
+      let cachedData = {
         // request payload size
         // response payload size
         request: {
@@ -114,15 +113,16 @@ class CacheLayer {
         response: {
           statusCode: ggResp.statusCode,
           headers: ggResp.headers,
-          payloadSize: null,    // size of buffer on disk
+          payloadSize: 0,    // size of buffer on disk
           buffer: new SmartBuffer(),
           dumpKey: key, // used to find payload data
 
           timeStart: Date.now(),
-          timEnd: null,
+          timeEnd: null,
         }
       }
 
+      let cachedResp = cachedData.response
 
       ggResp.on('data', d => {
         // when we get payload data from gg, write it to cache and back to game
@@ -131,7 +131,8 @@ class CacheLayer {
 
       ggResp.on('end', (e) => {
         console.debug(`Writing ${req.url} ${req.method} ${key} to cache`)
-        cachedResp.ggReqTimeEnd = Date.now()
+        cachedResp.timeEnd = Date.now()
+        cachedResp.payloadSize = cachedResp.buffer.toBuffer().size
         this.storage[key] = cachedResp
         callback(cachedResp)
         console.timeEnd(`gg-req ${key}`)
