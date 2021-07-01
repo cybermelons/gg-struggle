@@ -78,9 +78,6 @@ class CacheLayer {
         callback(data)
       })
     }
-
-    // make an async request to update the cache
-
   }
 
   fetchGg(req, reqBuffer, callback) {
@@ -118,16 +115,16 @@ class CacheLayer {
 
       ggResp.on('end', (e) => {
         console.debug(`Writing ${req.url} ${req.method} ${key} to cache`)
-        const key = this._makeKey(req, reqBuffer)
-        cachedResp.timeEnd = Date.now()
+        cachedResp.ggReqTimeEnd = Date.now()
         this.storage[key] = cachedResp
         callback(cachedResp)
         console.timeEnd(`gg-req ${key}`)
       })
 
-      ggResp.on('end', (e) => {
-        // log
-
+      // write response to log
+      const ggRespLog = fs.createWriteStream(`${process.env.GGST_DUMP_DIR}/${key}.ggResp.dump`)
+      ggResp.on('data', d => {
+        ggRespLog.write(data)
       })
 
       ggResp.on('error', e => {
@@ -189,12 +186,13 @@ function handleGameReq(gameReq, gameResp) {
 
     // copy the cached gg response into the game's response buffer
     const storage = getStorage()
+    const key = getStorage()._makeKey(gameReq, gameReqBuffer)
+
     storage.get(gameReq, gameReqBuffer, (data) => {
       gameResp.writeHead(data.statusCode, data.headers)
       gameResp.end(data.buffer.toBuffer())
     })
 
-    const key = getStorage()._makeKey(gameReq, gameReqBuffer)
     console.log(`[GAMEREQ] ${gameReq.url} ${gameReq.method} ${key}`)
 
     if (storage.contains(gameReq, gameReqBuffer)) {
@@ -204,6 +202,14 @@ function handleGameReq(gameReq, gameResp) {
     else {
       console.log(`Cache miss: ${gameReq.url} ${gameReq.method} ${gameReqBuffer.toBuffer()}`)
     }
+
+
+    const gameReqLog = fs.createWriteStream(`${process.env.GGST_DUMP_DIR}/${key}.gameReq.dump`)
+    gameReqLog.on('error', (e) => {
+      console.error(`Error writing to gameReq dump file: ${e}`)
+    })
+
+    gameReqLog.write(gameReqBuffer.toBuffer())
 
   })
 }
