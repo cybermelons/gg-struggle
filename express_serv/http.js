@@ -86,34 +86,16 @@ class CacheLayer {
       console.debug(`Attempting to get ggResponse`)
 
       // set headers before any writing happens
-      let cachedData = {
-        // request payload size
-        // response payload size
-        request: {
-          headers: gameReq.headers,
-          method: gameReq.method,
-          url: gameReq.url,
-          payloadSize: gameReq.toBuffer().size,
-          buffer: SmartBuffer.fromBuffer(gameReq)
-          dumpKey: gameReq.key, // used to find payload data
+      let cachedResponse = {
+        statusCode: ggResp.statusCode,
+        headers: ggResp.headers,
+        payloadSize: 0,    // size of buffer on disk
+        buffer: new SmartBuffer(),
+        dumpKey: key, // used to find payload data
 
-          timeStart: null,
-          timeEnd: null,
-        }
-
-        response: {
-          statusCode: ggResp.statusCode,
-          headers: ggResp.headers,
-          payloadSize: 0,    // size of buffer on disk
-          buffer: new SmartBuffer(),
-          dumpKey: key, // used to find payload data
-
-          timeStart: Date.now(),
-          timeEnd: null,
-        }
+        timeStart: Date.now(),
+        timeEnd: null,
       }
-
-      let cachedResp = cachedData.response
 
       ggResp.on('data', d => {
         // when we get payload data from gg, write it to cache and back to game
@@ -203,11 +185,11 @@ class DbLayer {
     fs.write(gameReq.buffer.toBuffer())
   }
 
-  _writeDb(req)
+  _writeRequestDb(req)
   {
     var stmt = db.prepare(`INSERT INTO requests VALUES (?, ?, ?, ?, ?, ?, ?)
     WHERE dumpKey == ?`);
-    stmt.run(req.dumpKey, req.headers, req.method, req.url, req.payloadSize,
+    stmt.run(req.dumpKey, JSON.stringify(req.headers), req.method, req.url, req.payloadSize,
       req.timeStart, req.timeEnd)
   }
 
@@ -224,6 +206,19 @@ class DbLayer {
 
 
   putResponse(resp) {
+    this._writeRequestDb(resp)
+
+    const respLog = fs.createWriteStream(`${DUMP_DIR}/${key}.ggResp.dump`)
+    fs.write(resp.buffer.toBuffer())
+  }
+
+
+  _writeRequestDb(resp) {
+    var stmt = db.prepare(`INSERT INTO responses VALUES (?, ?, ?, ?, ?, ?, ?)
+    WHERE dumpKey == ?`);
+    stmt.run(req.dumpKey, JSON.stringify(req.headers), req.method,
+      req.url, req.payloadSize, req.statusCode,
+      req.timeStart, req.timeEnd)
   }
 }
 
