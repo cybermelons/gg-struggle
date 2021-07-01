@@ -29,14 +29,6 @@ class CacheLayer {
                     // fetch data
   }
 
-  _makeKey(req, reqBuffer) {
-    // hashing the request with
-    //    method, url, body
-    const {url, method} = req
-    const body = reqBuffer.toString()
-    return hash({url, method, body})
-  }
-
   get(gameReq, callback) {
     // fetch and run callback on the response.
     // the response may either be cached or live.
@@ -136,10 +128,9 @@ class CacheLayer {
     return ggReq;
   }
 
-  contains(req, reqBuffer) {
+  contains(gameReq) {
     // TODO invalidate old requests
-    const key = this._makeKey(req, reqBuffer)
-    return key in this.cache.contains(key)
+    return gameReq.key in this.cache
   }
 }
 
@@ -180,20 +171,20 @@ class DbLayer {
     this._writeRequestDb(gameReq)
 
     // write to file
-    const reqLog = fs.createWriteStream(`${DUMP_DIR}/${key}.gameReq.dump`)
-    fs.write(gameReq.buffer.toBuffer())
+    const reqLog = fs.createWriteStream(`${DUMP_DIR}/${gameReq.key}.gameReq.dump`)
+    reqLog.write(gameReq.buffer.toBuffer())
   }
 
   _writeRequestDb(req)
   {
-    var stmt = db.prepare(`INSERT INTO requests VALUES (?, ?, ?, ?, ?, ?, ?)
+    var stmt = this.db.prepare(`INSERT INTO requests VALUES (?, ?, ?, ?, ?, ?, ?)
     WHERE dumpKey == ?`);
     stmt.run(req.dumpKey, JSON.stringify(req.headers), req.method, req.url, req.payloadSize,
       req.timeStart, req.timeEnd)
   }
 
   updateRequestTime(gameReq) {
-    var stmt = db.prepare(`UPDATE requests
+    var stmt = this.db.prepare(`UPDATE requests
       SET timeEnd = ?
       WHERE dumpKey == ?
         AND timeStart == ?
@@ -205,19 +196,19 @@ class DbLayer {
 
 
   putResponse(resp) {
-    this._writeRequestDb(resp)
+    this._writeResponseDb(resp)
 
     const respLog = fs.createWriteStream(`${DUMP_DIR}/${key}.ggResp.dump`)
     fs.write(resp.buffer.toBuffer())
   }
 
 
-  _writeRequestDb(resp) {
-    var stmt = db.prepare(`INSERT INTO responses VALUES (?, ?, ?, ?, ?, ?, ?)
-    WHERE dumpKey == ?`);
-    stmt.run(req.dumpKey, JSON.stringify(req.headers), req.method,
-      req.url, req.payloadSize, req.statusCode,
-      req.timeStart, req.timeEnd)
+  _writeResponseDb(resp) {
+    var stmt = this.db.prepare(`INSERT INTO responses VALUES (?, ?, ?, ?, ?, ?, ?)`)
+
+    stmt.run(resp.dumpKey, JSON.stringify(resp.headers), resp.method,
+      resp.url, resp.payloadSize, resp.statusCode,
+      resp.timeStart, resp.timeEnd)
   }
 }
 
@@ -253,7 +244,7 @@ class GameRequest {
     this.url = httpReq.url
 
     this.payloadSize = 0
-    this.buffer = SmartBuffer.fromBuffer(reqBuffer)
+    this.buffer = reqBuffer
 
     const { url, method } = httpReq
     const body = reqBuffer.toString()
@@ -281,7 +272,7 @@ function handleGameReq(httpReq, gameResp) {
   })
 
 
-  var reqBuffer = new SmartBuffer()
+  const reqBuffer = new SmartBuffer()
   httpReq.on('data', (d) => {
     reqBuffer.writeBuffer(d)
   })
@@ -291,7 +282,7 @@ function handleGameReq(httpReq, gameResp) {
 
     const db = getDb()
     const respCache = getCache()
-    const gameReq = new GameRequest(httpReq, reqBuffer.toBuffer())
+    let gameReq = new GameRequest(httpReq, reqBuffer)
 
     db.putRequest(gameReq)
 
