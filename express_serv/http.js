@@ -203,17 +203,22 @@ class DbLayer {
     fs.write(gameReq.buffer.toBuffer())
   }
 
-  _writeDb(gameReq)
+  _writeDb(req)
   {
-    var stmt = db.prepare("INSERT INTO requests VALUES (?)");
+    var stmt = db.prepare(`INSERT INTO requests VALUES (?, ?, ?, ?, ?, ?, ?)
+    WHERE dumpKey == ?`);
+    stmt.run(req.dumpKey, req.headers, req.method, req.url, req.payloadSize,
+      req.timeStart, req.timeEnd)
+  }
 
-    for (var i = 0; i < 10; i++) {
-      const { dumpKey,
-      stmt.run({req})
-        // TODO
-    }
-
-    stmt.finalize();
+  updateRequestTime(gameReq) {
+    var stmt = db.prepare(`UPDATE requests
+      SET timeEnd = ?
+      WHERE dumpKey == ?
+        AND timeStart == ?
+      LIMIT 1
+    `)
+    stmt.run(Date.now(), gameReq.dumpKey)
   }
 
 
@@ -235,13 +240,13 @@ function isUsingHttps() {
 }
 
 class GameRequest {
-  constructor(httpReq) {
+  constructor(httpReq, reqBuffer) {
     this.headers = httpReq.headers
     this.method = httpReq.method
     this.url = httpReq.url
 
     this.payloadSize = 0
-    this.buffer = SmartBuffer.fromBuffer(httpReq)
+    this.buffer = SmartBuffer.fromBuffer(reqBuffer)
 
     this.key = hash({this.url, this.method, this.buffer.toString()})
 
@@ -251,10 +256,6 @@ class GameRequest {
 
   write(data) {
     this.buffer.writeBuffer(d)
-  }
-
-  setKey() {
-    this.key = hash({this.url, this.method, this.buffer.toString()})
   }
 }
 
@@ -270,11 +271,10 @@ function handleGameReq(httpReq, gameResp) {
     console.timeEnd('gg-struggle api request')
   })
 
-  // store the incoming request stream into a buffer
-  var gameReq = new GameRequest(gameReq)
 
+  var reqBuffer = new SmartBuffer()
   httpReq.on('data', (d) => {
-    gameReq.write(d)
+    reqBuffer.write(d)
   })
 
 
@@ -282,9 +282,9 @@ function handleGameReq(httpReq, gameResp) {
 
     const db = getDb()
     const respCache = getCache()
+    const gameReq = new GameRequest(gameReq, reqBuffer)
 
-    gameReq.setKey()
-    db.putRequest(gameReq)
+    db.insertRequest(gameReq)
 
     respCache.get(gameReq, (ggResp) => {
       // return response back to game
@@ -298,7 +298,7 @@ function handleGameReq(httpReq, gameResp) {
     // record the time we respond to the game
     gameResp.on('end', () => {
       gameReq.timeEnd = Date.now()
-      db.putRequest(gameReq)
+      db.updateRequestTime(gameReq)
     })
 
     console.log(`[GAMEREQ] ${gameReq.url} ${gameReq.method} ${gameReq.key}`)
