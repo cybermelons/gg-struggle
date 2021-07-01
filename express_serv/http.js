@@ -65,8 +65,8 @@ class CacheLayer {
     const options = {
       hostname: 'ggst-game.guiltygear.com',
       port: 443,
-      path: req.url,
-      method: req.method,
+      path: gameReq.url,
+      method: gameReq.method,
       headers: {
         'user-agent': 'Steam',
         'accept': '*/*',
@@ -81,7 +81,7 @@ class CacheLayer {
       console.debug(`Attempting to get ggResponse`)
 
       // set headers before any writing happens
-      let cachedResponse = {
+      let cachedResp = {
         statusCode: ggResp.statusCode,
         headers: ggResp.headers,
         payloadSize: 0,    // size of buffer on disk
@@ -98,17 +98,17 @@ class CacheLayer {
       })
 
       ggResp.on('end', (e) => {
-        console.debug(`Writing ${req.url} ${req.method} ${key} to cache`)
+        console.debug(`Writing ${gameReq.url} ${gameReq.method} ${gameReq.key} to cache`)
         cachedResp.timeEnd = Date.now()
         cachedResp.payloadSize = cachedResp.buffer.toBuffer().size
-        this.cache.set(key) = cachedResp
+        this.cache.set(gameReq.key, cachedResp)
 
         callback(cachedResp)
         console.timeEnd(`gg-req ${key}`)
       })
 
       ggResp.on('data', data => {
-        cachedResponse.buffer.write(data)
+        cachedResp.buffer.writeBuffer(data)
       })
 
       ggResp.on('error', e => {
@@ -120,10 +120,10 @@ class CacheLayer {
     })
 
     // send the request.
-    ggReq.headers = req.headers
-    ggReq.statusCode = req.statusCode
-    ggReq.key = key
-    ggReq.end(reqBuffer.toBuffer())
+    ggReq.headers = gameReq.headers
+    ggReq.statusCode = gameReq.statusCode
+    ggReq.key = gameReq.key
+    ggReq.end(gameReq.buffer.toBuffer())
 
     return ggReq;
   }
@@ -140,30 +140,36 @@ class DbLayer {
   constructor(db, dumpDir) {
     this.db = db
     this.dumpDir = dumpDir
+  }
 
-    this.db.run(`CREATE TABLE IF NOT EXISTS requests (
-      dumpKey TEXT PRIMARY KEY,
-      headers BLOB,
-      method TEXT,
-      url TEXT,
-      payloadSize INTEGER,
+  init()
+  {
+    console.log('in init')
+    this.db.serialize( () => {
+      this.db.run(`CREATE TABLE IF NOT EXISTS requests (
+        dumpKey TEXT PRIMARY KEY,
+        headers BLOB,
+        method TEXT,
+        url TEXT,
+        payloadSize INTEGER,
 
-      timeStart INTEGER,
-      timeEnd INTEGER,
-    )`);
+        timeStart INTEGER,
+        timeEnd INTEGER
+      );`);
 
-    this.db.run(`CREATE TABLE IF NOT EXISTS responses (
-      dumpKey TEXT PRIMARY KEY,
-      headers BLOB,
-      method TEXT,
-      url TEXT,
-      payloadSize INTEGER,
-      statusCode INTEGER,
+      this.db.run(`CREATE TABLE IF NOT EXISTS responses (
+        dumpKey TEXT PRIMARY KEY,
+        headers BLOB,
+        method TEXT,
+        url TEXT,
+        payloadSize INTEGER,
+        statusCode INTEGER,
 
-      timeStart INTEGER,
-      timeEnd INTEGER,
-    )`);
-
+        timeStart INTEGER,
+        timeEnd INTEGER
+      );`)
+      ;
+    })
   }
 
   putRequest(gameReq) {
@@ -178,19 +184,31 @@ class DbLayer {
   _writeRequestDb(req)
   {
     var stmt = this.db.prepare(`INSERT INTO requests VALUES (?, ?, ?, ?, ?, ?, ?)
-    WHERE dumpKey == ?`);
-    stmt.run(req.dumpKey, JSON.stringify(req.headers), req.method, req.url, req.payloadSize,
-      req.timeStart, req.timeEnd)
+    ;`);
+
+    stmt.on('error', (err) => {
+      console.error(`_writeRequestDb: Error writing request to db: ${err}`)
+    })
+
+    stmt.run(req.dumpKey, JSON.stringify(req.headers),
+      req.method, req.url,
+      req.payloadSize, req.timeStart,
+      req.timeEnd)
+
   }
 
   updateRequestTime(gameReq) {
+    console.log('udpateReqTime')
     var stmt = this.db.prepare(`UPDATE requests
       SET timeEnd = ?
-      WHERE dumpKey == ?
-        AND timeStart == ?
+      WHERE (dumpKey == ?
+        AND timeStart == ?)
       LIMIT 1
-    `)
-    stmt.run(Date.now(), gameReq.dumpKey)
+    ;`)
+    stmt.on('error', (err) => {
+      console.error(`updateRequestTime: Error writing request to db: ${err}`)
+    })
+    stmt.run(Date.now(), gameReq.dumpKey, gameReq.timeStart)
   }
 
 
@@ -199,13 +217,17 @@ class DbLayer {
     this._writeResponseDb(resp)
 
     const respLog = fs.createWriteStream(`${DUMP_DIR}/${key}.ggResp.dump`)
-    fs.write(resp.buffer.toBuffer())
+    respLog.write(resp.buffer.toBuffer())
   }
 
 
   _writeResponseDb(resp) {
+    console.log('writeResp')
     var stmt = this.db.prepare(`INSERT INTO responses VALUES (?, ?, ?, ?, ?, ?, ?)`)
 
+    stmt.on('error', (err) => {
+      console.error(`Error writing request to db: ${err}`)
+    })
     stmt.run(resp.dumpKey, JSON.stringify(resp.headers), resp.method,
       resp.url, resp.payloadSize, resp.statusCode,
       resp.timeStart, resp.timeEnd)
@@ -220,18 +242,24 @@ function getDb() {
   if (! (DB) ) {
     var sqldb = new sqlite3.Database(DB_FILE, (err) => {
       if (err) {
-        console.error(`Error connecting to db ${dbFileName}: ${err}`)
+        console.error(`Error connecting to db ${DB_FILE}: ${err}`)
       }
       else {
-        console.log(`Connected to db ${dbFileName}`)
+        console.log(`Connected to db ${DB_FILE}`)
       }
     })
 
+    console.log('creating db')
     DB = new DbLayer(sqldb, DUMP_DIR)
+    console.log('init db')
+    DB.init()
+    console.log('launched init db')
   }
 
   return DB
 }
+
+getDb()
 
 function isUsingHttps() {
   return process.env.GGST_SSL_CERT && process.env.GGST_SSL_KEY
