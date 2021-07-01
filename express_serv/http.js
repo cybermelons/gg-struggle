@@ -2,70 +2,75 @@ const http = require('http')
 const https = require('https')
 const hash = require('object-hash')
 const fs = require('fs')
+const sqlite3 = require('sqlite3')
+const EventEmitter = require('events')
 const SmartBuffer = require('smart-buffer').SmartBuffer;
 
 const EXPIRE_TIME_MS = 1000 * 60 * 60 * 60 * 24 // max cache-age: 1 day
 
+const DUMP_DIR = process.env.GGST_DUMP_DIR ? process.env.GGST_DUMP_DIR : './dumps/'
 
-class CacheLayer {
-  constructor() {
+const DB_FILE = process.env.GGST_SQLITE_DB ? process.env.GGST_SQLITE_DB  : 'gg-struggle.db'
+
+// [ ] time the times each route takes
+// [ ] sort routes by payload size
+// [ ] sort routes by average time taken
+// /api/route POST data=abcd1234 -> binarydata..{}.
+//
+class CacheLayer extends EventEmitter {
+  constructor(props) {
+    super(props)
     // TODO use redis or something
-    this.storage = {}
+
+    // 3 layers of storage
+    this.cache = new Map() // in-memory
+                           // persistent
+                           // fetch data
   }
 
-  _makeKey(req, reqBuffer) {
-    // hashing the request with
-    //    method, url, body
-    const {url, method} = req
-    const body = reqBuffer.toString()
-    return hash({url, method, body})
-  }
+  get(gameReq, callback) {
+    // fetch and run callback on the response.
+    // the response may either be cached or live.
+    //
+    // current caching strategy:
+    //  miss - wait for payload, then cache and return
+    //  hits - return cached data, and refresh payload in background
 
-  createLogFiles(req, reqBuffer) {
-    const key = this._makeKey(req, reqBuffer)
-    return {
-      gameReqFile : fs.createWriteStream(`dumps/${key}.gameReq.dump`),
-      gameRespFile : fs.createWriteStream(`dumps/${key}.gameResp.dump`),
-      ggReqFile : fs.createWriteStream(`dumps/${key}.ggReq.dump`),
-      ggRespFile : fs.createWriteStream(`dumps/${key}.ggResp.dump`),
-    }
-  }
-
-  get(req, reqBuffer, callback) {
-    // TODO this could be done with event handlers
     // need get to return the buffer
-    const key = this._makeKey(req, reqBuffer)
+    const key = gameReq.key
 
-    if (this.contains(req, reqBuffer)) {
-      let payload = this.storage[key]
-      callback(this.storage[key])
+    if (this.contains(gameReq)) {
+      this.emit('cache-hit', gameReq)
+      let ggResp = this.cache.get(key)
+      callback(ggResp)
 
-      // refresh payload only after
-      if (Date.now() > payload.time + EXPIRE_TIME_MS) {
-        this.fetchGg(req, reqBuffer, (data) => {
-          this.storage[key] = data
+      // only refresh items if expired
+      if (Date.now() > ggResp.timeStart + EXPIRE_TIME_MS) {
+        console.log(`[CACHE] Refreshing key because expired: ${gameReq.key}`)
+        this.fetchGg(gameReq, (data) => {
+          this.emit('fetch', data)
+          this.cache.set(key, data)
         })
       }
     }
 
     else {
-      this.fetchGg(req, reqBuffer, (data) => {
-        this.storage[key] = data
+      this.emit('cache-miss', gameReq)
+      this.fetchGg(gameReq, (data) => {
+        this.emit('fetch', data)
+        this.cache.set(key, data)
         callback(data)
       })
     }
-
-    // make an async request to update the cache
-
   }
 
-  fetchGg(req, reqBuffer, callback) {
-    const key = this._makeKey(req, reqBuffer)
+  fetchGg(gameReq, callback) {
+    const key = gameReq.key
     const options = {
       hostname: 'ggst-game.guiltygear.com',
       port: 443,
-      path: req.url,
-      method: req.method,
+      path: gameReq.url,
+      method: gameReq.method,
       headers: {
         'user-agent': 'Steam',
         'accept': '*/*',
@@ -76,16 +81,25 @@ class CacheLayer {
 
     // create ggRequest
     console.time(`gg-req ${key}`)
-    const ggReq = https.request(options, (ggResp) => {
-      console.debug(`Attempting to get ggResponse`)
 
+
+    let cachedResp = {
+      statusCode: null,
+      headers: null,
+      payloadSize: 0,    // size of buffer on disk
+      buffer: new SmartBuffer(),
+      key: gameReq.key, // used to find payload data
+      url: gameReq.url,
+      method: gameReq.method,
+
+      timeStart: Date.now(),
+      timeEnd: null,
+    }
+
+    const ggReq = https.request(options, (ggResp) => {
       // set headers before any writing happens
-      let cachedResp = {
-        headers: ggResp.headers,
-        statusCode: ggResp.statusCode,
-        time: Date.now(),
-        buffer: new SmartBuffer(),
-      }
+      cachedResp.statusCode = ggResp.statusCode
+      cachedResp.headers = ggResp.headers
 
       ggResp.on('data', d => {
         // when we get payload data from gg, write it to cache and back to game
@@ -93,48 +107,193 @@ class CacheLayer {
       })
 
       ggResp.on('end', (e) => {
-        console.debug(`Writing ${req.url} ${req.method} ${key} to cache`)
-        this.storage[key] = cachedResp
+        console.debug(`[CACHE] Writing response ${gameReq.url} ${gameReq.method} ${key} to cache`)
+        cachedResp.timeEnd = Date.now()
+        cachedResp.payloadSize = cachedResp.buffer.toBuffer().length
+        this.cache.set(gameReq.key, cachedResp)
+
         callback(cachedResp)
         console.timeEnd(`gg-req ${key}`)
       })
 
       ggResp.on('error', e => {
-        console.error(`Error in response from gg servers: ${e}`)
-
-        console.error(`Bailed on caching response from GG`)
-        delete this.storage[key]
+        console.error(`[CACHE] Error in response from gg servers: ${e}`)
+        console.error(`[CACHE] Bailed on caching response from GG`)
+        this.cache.remove(key)
         console.timeEnd(`gg-req ${key}`)
       })
     })
 
     // send the request.
-    ggReq.headers = req.headers
-    ggReq.statusCode = req.statusCode
-    ggReq.key = key
-    ggReq.end(reqBuffer.toBuffer())
+    ggReq.headers = gameReq.headers
+    ggReq.statusCode = gameReq.statusCode
+    ggReq.key = gameReq.key
+    ggReq.end(gameReq.buffer.toBuffer())
 
     return ggReq;
   }
 
-  contains(req, reqBuffer) {
+  contains(gameReq) {
     // TODO invalidate old requests
-    const key = this._makeKey(req, reqBuffer)
-    return key in this.storage
+    return this.cache.has(gameReq.key)
   }
 }
-var CACHE_LAYER = new CacheLayer()
 
-function getStorage() {
+class DbLayer {
+  // responsible for saving the requests and responses
+
+  constructor(db, dumpDir) {
+    this.db = db
+    this.dumpDir = dumpDir
+  }
+
+  init()
+  {
+    this.db.serialize( () => {
+      this.db.run(`CREATE TABLE IF NOT EXISTS requests (
+        dumpKey TEXT PRIMARY KEY ON CONFLICT IGNORE,
+        headers BLOB,
+        method TEXT,
+        url TEXT,
+        payloadSize INTEGER,
+
+        timeStart INTEGER,
+        timeEnd INTEGER
+      );`);
+
+      this.db.run(`CREATE TABLE IF NOT EXISTS responses (
+        dumpKey TEXT PRIMARY KEY ON CONFLICT IGNORE,
+        headers BLOB,
+        method TEXT,
+        url TEXT,
+        payloadSize INTEGER,
+        statusCode INTEGER,
+
+        timeStart INTEGER,
+        timeEnd INTEGER
+      );`)
+      ;
+    })
+  }
+
+  putRequest(gameReq) {
+    // insert into db
+    this._writeRequestDb(gameReq)
+
+    // write to file
+    const dumpFile = `${DUMP_DIR}/${gameReq.key}.gameReq.dump`
+    console.log(`[DB] Dumping request to ${dumpFile}`)
+    const reqLog = fs.createWriteStream(dumpFile)
+    reqLog.write(gameReq.buffer.toBuffer())
+    reqLog.close()
+  }
+
+  _writeRequestDb(req)
+  {
+    var stmt = this.db.prepare(`INSERT INTO requests VALUES (?, ?, ?, ?, ?, ?, ?)
+    ;`);
+
+    stmt.on('error', (err) => {
+      console.error(`_writeRequestDb: Error writing request to db: ${err}`)
+    })
+
+    stmt.run(req.key, JSON.stringify(req.headers),
+      req.method, req.url,
+      req.payloadSize,
+      req.timeStart, req.timeEnd)
+
+  }
+
+  updateRequestTime(gameReq) {
+    var stmt = this.db.prepare(`UPDATE requests
+      SET timeEnd = ?
+      WHERE (dumpKey == ? AND timeStart == ?)
+    ;`)
+    stmt.on('error', (err) => {
+      console.error(`updateRequestTime: Error writing request to db: ${err}`)
+    })
+    stmt.run(Date.now(), gameReq.key, gameReq.timeStart)
+  }
+
+
+
+  putResponse(resp) {
+    this._writeResponseDb(resp)
+
+    const dumpFile = `${DUMP_DIR}/${resp.key}.ggResp.dump`
+    const respLog = fs.createWriteStream(dumpFile)
+
+    console.log(`[DB] Dumping response to ${dumpFile}`)
+    respLog.write(resp.buffer.toBuffer())
+    respLog.close()
+  }
+
+
+  _writeResponseDb(resp) {
+    var stmt = this.db.prepare(`INSERT INTO responses VALUES (?, ?, ?, ?, ?, ?, ?, ?) ;`)
+
+    stmt.on('error', (err) => {
+      console.error(`_writeResponseDb: Error writing request to db: ${err}`)
+    })
+    stmt.run(resp.key, JSON.stringify(resp.headers),
+      resp.method, resp.url,
+      resp.payloadSize, resp.statusCode,
+      resp.timeStart, resp.timeEnd)
+  }
+}
+
+function getCache() {
   return CACHE_LAYER
 }
+
+function getDb() {
+  if (! (DB) ) {
+    var sqldb = new sqlite3.Database(DB_FILE, (err) => {
+      if (err) {
+        console.error(`[DB] Error connecting to db ${DB_FILE}: ${err}`)
+      }
+      else {
+        console.log(`[DB] Connected to db ${DB_FILE}`)
+      }
+    })
+
+    DB = new DbLayer(sqldb, DUMP_DIR)
+    DB.init()
+  }
+
+  return DB
+}
+
+getDb()
 
 function isUsingHttps() {
   return process.env.GGST_SSL_CERT && process.env.GGST_SSL_KEY
 }
 
+class GameRequest {
+  constructor(httpReq, reqBuffer) {
+    this.headers = httpReq.headers
+    this.method = httpReq.method
+    this.url = httpReq.url
 
-function handleGameReq(gameReq, gameResp) {
+    this.payloadSize = reqBuffer.toBuffer().length
+    this.buffer = reqBuffer
+
+    const { url, method } = httpReq
+    const body = reqBuffer.toBuffer()
+    this.key = hash({url, method, body})
+
+    this.timeStart =  Date.now()
+    this.timeEnd = null
+  }
+
+  write(data) {
+    this.buffer.writeBuffer(d)
+  }
+}
+
+
+function handleGameReq(httpReq, gameResp) {
   console.time('gg-struggle api request')
   // time the response
   gameResp.on('finish', () => {
@@ -145,39 +304,44 @@ function handleGameReq(gameReq, gameResp) {
     console.timeEnd('gg-struggle api request')
   })
 
-  // store the incoming request stream into a buffer
-  var gameReqBuffer = new SmartBuffer()
-  gameReq.on('data', (d) => {
-    gameReqBuffer.writeBuffer(d)
+
+  const reqBuffer = new SmartBuffer()
+  httpReq.on('data', (d) => {
+    reqBuffer.writeBuffer(d)
   })
 
+  const db = getDb()
+  const respCache = getCache()
 
-  // then once the buffer is filled, start processing
-  // TODO put this into a function
-  gameReq.on('end', () => {
+  httpReq.on('end', () => {
 
-    const storage = getStorage()
+    let gameReq = new GameRequest(httpReq, reqBuffer)
 
-    storage.get(gameReq, gameReqBuffer, (data) => {
-      gameResp.writeHead(data.statusCode, data.headers)
-      gameResp.end(data.buffer.toBuffer())
+    console.log(`[PROXY] ${gameReq.url} ${gameReq.method} ${gameReq.key}`)
+
+    // store the game request and responses into a persistent db
+    db.putRequest(gameReq)
+
+
+    // copy the cache response back to user
+    respCache.get(gameReq, (ggResp) => {
+      gameResp.writeHead(ggResp.statusCode, ggResp.headers)
+      gameResp.end(ggResp.buffer.toBuffer())
     })
 
-    const key = getStorage()._makeKey(gameReq, gameReqBuffer)
-    console.log(`[GAMEREQ] ${gameReq.url} ${gameReq.method} ${key}`)
-
-    if (storage.contains(gameReq, gameReqBuffer)) {
-      // return cached resp
-      console.log(`Cache hit: ${gameReq.url} ${gameReq.method} ${gameReqBuffer.toBuffer()}`)
-    }
-    else {
-      console.log(`Cache miss: ${gameReq.url} ${gameReq.method} ${gameReqBuffer.toBuffer()}`)
-    }
+    // record the time we respond to the game
+    gameResp.on('close', () => {
+      console.log(`[DB] Updating end time on req ${gameReq.key}`)
+      gameReq.timeEnd = Date.now()
+      db.updateRequestTime(gameReq)
+    })
 
   })
 }
 
 
+var CACHE_LAYER = new CacheLayer()
+var DB
 
 let createServer = http.createServer
 let serverOpts = {
@@ -186,7 +350,7 @@ let serverOpts = {
 
 // Use HTTPS if specified
 if (isUsingHttps()) {
-  console.log('Enabling HTTPS')
+  console.log('[PROXY] Enabling HTTPS')
   createServer = https.createServer
   serverOpts = {
     ...serverOpts,
@@ -198,15 +362,29 @@ if (isUsingHttps()) {
   }
 }
 
+const db = getDb()
+const respCache = getCache()
+
+respCache.on('fetch', (ggResp) => {
+  console.log(`[DB] Storing ${ggResp.key} response into db`)
+  db.putResponse(ggResp)
+})
+
+respCache.on('cache-miss', (gameReq) => {
+  console.log(`[CACHE] Miss: ${gameReq.url} ${gameReq.method} ${gameReq.buffer.toBuffer()}`)
+})
+respCache.on('cache-hit', (gameReq) => {
+  console.log(`[CACHE] Hit: ${gameReq.url} ${gameReq.method} ${gameReq.buffer.toBuffer()}`)
+})
+
 let app = createServer(serverOpts, handleGameReq)
 
-
 app.listen(serverOpts, () => {
-  console.log(`Listening on ${serverOpts.port}`)
+  console.log(`[PROXY] Listening on ${serverOpts.port}`)
 })
 
 app.on('clientError', (e, socket) => {
-  console.error(`Error connecting client via TLS: ${e}`)
+  console.error(`[PROXY] Error connecting client via TLS: ${e}`)
 })
 
 
