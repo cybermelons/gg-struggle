@@ -241,7 +241,7 @@ class GameRequest {
     this.url = httpReq.url
 
     this.payloadSize = 0
-    this.buffer = SmartBuffer.fromBuffer(gameReq)
+    this.buffer = SmartBuffer.fromBuffer(httpReq)
 
     this.key = hash({this.url, this.method, this.buffer.toString()})
 
@@ -251,6 +251,10 @@ class GameRequest {
 
   write(data) {
     this.buffer.writeBuffer(d)
+  }
+
+  setKey() {
+    this.key = hash({this.url, this.method, this.buffer.toString()})
   }
 }
 
@@ -274,15 +278,12 @@ function handleGameReq(httpReq, gameResp) {
   })
 
 
-  // then once the buffer is filled, start processing
-  // TODO put this into a function
   httpReq.on('end', () => {
-
-    gameReq
 
     const db = getDb()
     const respCache = getCache()
 
+    gameReq.setKey()
     db.putRequest(gameReq)
 
     respCache.get(gameReq, (ggResp) => {
@@ -294,14 +295,20 @@ function handleGameReq(httpReq, gameResp) {
       db.putResponse(ggResp)
     })
 
+    // record the time we respond to the game
+    gameResp.on('end', () => {
+      gameReq.timeEnd = Date.now()
+      db.putRequest(gameReq)
+    })
+
     console.log(`[GAMEREQ] ${gameReq.url} ${gameReq.method} ${gameReq.key}`)
 
-    if (respCache.contains(gameReq, gameReqBuffer)) {
+    if (respCache.contains(gameReq)) {
       // return cached resp
-      console.log(`Cache hit: ${gameReq.url} ${gameReq.method} ${gameReqBuffer.toBuffer()}`)
+      console.log(`Cache hit: ${gameReq.url} ${gameReq.method} ${gameReq.buffer.toBuffer()}`)
     }
     else {
-      console.log(`Cache miss: ${gameReq.url} ${gameReq.method} ${gameReqBuffer.toBuffer()}`)
+      console.log(`Cache miss: ${gameReq.url} ${gameReq.method} ${gameReq.buffer.toBuffer()}`)
     }
 
 
@@ -311,7 +318,7 @@ function handleGameReq(httpReq, gameResp) {
       console.error(`Error writing to gameReq dump file: ${e}`)
     })
 
-    gameReqLog.write(gameReqBuffer.toBuffer())
+    gameReqLog.write(gameReq.buffer.toBuffer())
 
   })
 }
