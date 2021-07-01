@@ -38,8 +38,9 @@ class CacheLayer {
     //  hits - return cached data, and refresh payload in background
 
     // need get to return the buffer
-    const key = gameReq.dumpKey
+    const key = gameReq.key
 
+    console.log({key})
     if (this.contains(gameReq)) {
       let payload = this.cache.get(key)
       callback(payload)
@@ -61,7 +62,7 @@ class CacheLayer {
   }
 
   fetchGg(gameReq, callback) {
-    const key = gameReq.dumpKey
+    const key = gameReq.key
     const options = {
       hostname: 'ggst-game.guiltygear.com',
       port: 443,
@@ -76,7 +77,7 @@ class CacheLayer {
     }
 
     // create ggRequest
-    console.time(`gg-req ${key}`)
+    console.time(`gg-req ${gameReq.key}`)
     const ggReq = https.request(options, (ggResp) => {
       console.debug(`Attempting to get ggResponse`)
 
@@ -86,7 +87,7 @@ class CacheLayer {
         headers: ggResp.headers,
         payloadSize: 0,    // size of buffer on disk
         buffer: new SmartBuffer(),
-        dumpKey: key, // used to find payload data
+        key: key, // used to find payload data
 
         timeStart: Date.now(),
         timeEnd: null,
@@ -101,7 +102,7 @@ class CacheLayer {
         console.debug(`Writing ${gameReq.url} ${gameReq.method} ${gameReq.key} to cache`)
         cachedResp.timeEnd = Date.now()
         cachedResp.payloadSize = cachedResp.buffer.toBuffer().size
-        this.cache.set(gameReq.dumpKey, cachedResp)
+        this.cache.set(gameReq.key, cachedResp)
 
         callback(cachedResp)
         console.timeEnd(`gg-req ${key}`)
@@ -130,7 +131,7 @@ class CacheLayer {
 
   contains(gameReq) {
     // TODO invalidate old requests
-    return gameReq.dumpKey in this.cache
+    return gameReq.key in this.cache
   }
 }
 
@@ -177,7 +178,7 @@ class DbLayer {
     this._writeRequestDb(gameReq)
 
     // write to file
-    const reqLog = fs.createWriteStream(`${DUMP_DIR}/${gameReq.dumpKey}.gameReq.dump`)
+    const reqLog = fs.createWriteStream(`${DUMP_DIR}/${gameReq.key}.gameReq.dump`)
     reqLog.write(gameReq.buffer.toBuffer())
   }
 
@@ -190,7 +191,7 @@ class DbLayer {
       console.error(`_writeRequestDb: Error writing request to db: ${err}`)
     })
 
-    stmt.run(req.dumpKey, JSON.stringify(req.headers),
+    stmt.run(req.key, JSON.stringify(req.headers),
       req.method, req.url,
       req.payloadSize,
       req.timeStart, req.timeEnd)
@@ -208,7 +209,7 @@ class DbLayer {
     stmt.on('error', (err) => {
       console.error(`updateRequestTime: Error writing request to db: ${err}`)
     })
-    stmt.run(Date.now(), gameReq.dumpKey, gameReq.timeStart)
+    stmt.run(Date.now(), gameReq.key, gameReq.timeStart)
   }
 
 
@@ -216,7 +217,7 @@ class DbLayer {
   putResponse(resp) {
     this._writeResponseDb(resp)
 
-    const respLog = fs.createWriteStream(`${DUMP_DIR}/${resp.dumpKey}.ggResp.dump`)
+    const respLog = fs.createWriteStream(`${DUMP_DIR}/${resp.key}.ggResp.dump`)
     respLog.write(resp.buffer.toBuffer())
   }
 
@@ -228,7 +229,7 @@ class DbLayer {
     stmt.on('error', (err) => {
       console.error(`_writeResponseDb: Error writing request to db: ${err}`)
     })
-    stmt.run(resp.dumpKey, JSON.stringify(resp.headers),
+    stmt.run(resp.key, JSON.stringify(resp.headers),
       resp.method, resp.url,
       resp.payloadSize, resp.statusCode,
       resp.timeStart, resp.timeEnd)
@@ -330,7 +331,7 @@ function handleGameReq(httpReq, gameResp) {
       db.updateRequestTime(gameReq)
     })
 
-    console.log(`[GAMEREQ] ${gameReq.url} ${gameReq.method} ${gameReq.dumpKey}`)
+    console.log(`[GAMEREQ] ${gameReq.url} ${gameReq.method} ${gameReq.key}`)
 
     if (respCache.contains(gameReq)) {
       // return cached resp
@@ -342,7 +343,7 @@ function handleGameReq(httpReq, gameResp) {
 
 
     // TODO
-    const gameReqLog = fs.createWriteStream(`${DUMP_DIR}/${gameReq.dumpKey}.gameReq.dump`)
+    const gameReqLog = fs.createWriteStream(`${DUMP_DIR}/${gameReq.key}.gameReq.dump`)
     gameReqLog.on('error', (e) => {
       console.error(`Error writing to gameReq dump file: ${e}`)
     })
