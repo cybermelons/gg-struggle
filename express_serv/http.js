@@ -23,6 +23,10 @@ const EXPIRE_TIME_MS = 1000 * 60 * 60 * 60 * 24 // max cache-age: 1 day
 //
 //db.close();
 
+// [ ] time the times each route takes
+// [ ] sort routes by payload size
+// [ ] sort routes by average time taken
+// /api/route POST data=abcd1234 -> binarydata..{}.
 class CacheLayer {
   constructor() {
     // TODO use redis or something
@@ -41,14 +45,18 @@ class CacheLayer {
     const key = this._makeKey(req, reqBuffer)
     return {
       gameReqFile : fs.createWriteStream(`dumps/${key}.gameReq.dump`),
-      gameRespFile : fs.createWriteStream(`dumps/${key}.gameResp.dump`),
-      ggReqFile : fs.createWriteStream(`dumps/${key}.ggReq.dump`),
       ggRespFile : fs.createWriteStream(`dumps/${key}.ggResp.dump`),
     }
   }
 
   get(req, reqBuffer, callback) {
-    // TODO this could be done with event handlers
+    // fetch the request's response and run callback on it.
+    // the response may either be cached or live.
+    //
+    // current caching strategy:
+    //  miss - wait for payload, then cache and return
+    //  hits - return cached data, and refresh payload in background
+
     // need get to return the buffer
     const key = this._makeKey(req, reqBuffer)
 
@@ -56,7 +64,7 @@ class CacheLayer {
       let payload = this.storage[key]
       callback(this.storage[key])
 
-      // refresh payload only after
+      // only refresh items if expired
       if (Date.now() > payload.time + EXPIRE_TIME_MS) {
         this.fetchGg(req, reqBuffer, (data) => {
           this.storage[key] = data
@@ -99,7 +107,7 @@ class CacheLayer {
       let cachedResp = {
         headers: ggResp.headers,
         statusCode: ggResp.statusCode,
-        time: Date.now(),
+        ggReqTimeStart: Date.now(),
         buffer: new SmartBuffer(),
       }
 
@@ -110,9 +118,16 @@ class CacheLayer {
 
       ggResp.on('end', (e) => {
         console.debug(`Writing ${req.url} ${req.method} ${key} to cache`)
+        const key = this._makeKey(req, reqBuffer)
+        cachedResp.timeEnd = Date.now()
         this.storage[key] = cachedResp
         callback(cachedResp)
         console.timeEnd(`gg-req ${key}`)
+      })
+
+      ggResp.on('end', (e) => {
+        // log
+
       })
 
       ggResp.on('error', e => {
@@ -172,8 +187,8 @@ function handleGameReq(gameReq, gameResp) {
   // TODO put this into a function
   gameReq.on('end', () => {
 
+    // copy the cached gg response into the game's response buffer
     const storage = getStorage()
-
     storage.get(gameReq, gameReqBuffer, (data) => {
       gameResp.writeHead(data.statusCode, data.headers)
       gameResp.end(data.buffer.toBuffer())
