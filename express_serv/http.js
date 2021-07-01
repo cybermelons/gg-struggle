@@ -36,7 +36,7 @@ class CacheLayer {
     // 3 layers of storage
     this.cache = new Map() // in-memory
 
-    this.db = new sqlite3.Database(process.env.SQLITE_DB)
+    //this.db = new sqlite3.Database(process.env.SQLITE_DB)
                     // persistent
 
                     // fetch data
@@ -178,8 +178,64 @@ class CacheLayer {
 }
 var CACHE_LAYER = new CacheLayer()
 
-function getStorage() {
+var DB = new DbLayer(process.env.SQLITE_DB)
+
+class DbLayer {
+  constructor(sqlite_filename) {
+    this.db = new sqlite3.Database(sqlite_filename)
+
+    db.run(`CREATE TABLE IF NOT EXISTS requests (
+      dumpKey TEXT PRIMARY KEY,
+      headers BLOB,
+      method TEXT,
+      url TEXT,
+      payloadSize INTEGER,
+
+      timeStart INTEGER,
+      timeEnd INTEGER,
+    )`);
+
+    db.run(`CREATE TABLE IF NOT EXISTS responses (
+      dumpKey TEXT PRIMARY KEY,
+      headers BLOB,
+      method TEXT,
+      url TEXT,
+      payloadSize INTEGER,
+      statusCode INTEGER,
+
+      timeStart INTEGER,
+      timeEnd INTEGER,
+    )`);
+
+        response: {
+
+          timeStart: Date.now(),
+          timeEnd: null,
+        }
+
+    var stmt = db.prepare("INSERT INTO lorem VALUES (?)");
+    for (var i = 0; i < 10; i++) {
+        stmt.run("Ipsum " + i);
+    }
+    stmt.finalize();
+
+    db.each("SELECT rowid AS id, info FROM lorem", function(err, row) {
+        console.log(row.id + ": " + row.info);
+    });
+  }
+
+  putRequest(req, reqBuffer) {
+  }
+  putResponse(resp) {
+  }
+}
+
+function getCache() {
   return CACHE_LAYER
+}
+
+function getDb() {
+  return DB
 }
 
 function isUsingHttps() {
@@ -209,13 +265,21 @@ function handleGameReq(gameReq, gameResp) {
   // TODO put this into a function
   gameReq.on('end', () => {
 
-    // copy the cached gg response into the game's response buffer
-    const storage = getStorage()
-    const key = getStorage()._makeKey(gameReq, gameReqBuffer)
 
-    storage.get(gameReq, gameReqBuffer, (data) => {
-      gameResp.writeHead(data.statusCode, data.headers)
-      gameResp.end(data.buffer.toBuffer())
+    const db = getDb()
+    db.putRequest(gameReq, gameReqBuffer)
+    const key = respCache._makeKey(gameReq, gameReqBuffer)
+
+    // copy the cached gg response into the game's response buffer
+    const respCache = getCache()
+
+    storage.get(gameReq, gameReqBuffer, (ggResp) => {
+      // return response back to game
+      gameResp.writeHead(ggResp.statusCode, ggResp.headers)
+      gameResp.end(ggResp.buffer.toBuffer())
+
+      // store response
+      db.putResponse(ggResp)
     })
 
     console.log(`[GAMEREQ] ${gameReq.url} ${gameReq.method} ${key}`)
