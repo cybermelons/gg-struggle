@@ -6,6 +6,8 @@ const SmartBuffer = require('smart-buffer').SmartBuffer;
 
 const EXPIRE_TIME_MS = 1000 * 60 * 60 * 60 * 24 // max cache-age: 1 day
 
+const DUMP_DIR = process.env.GGST_DUMP_DIR ? process.env.GGST_DUMP_DIR : './dumps/'
+
 //var sqlite3 = require('sqlite3').verbose();
 //var db = new sqlite3.Database(process.env.SQLITE_DB);
 //
@@ -39,14 +41,6 @@ class CacheLayer {
     const {url, method} = req
     const body = reqBuffer.toString()
     return hash({url, method, body})
-  }
-
-  createLogFiles(req, reqBuffer) {
-    const key = this._makeKey(req, reqBuffer)
-    return {
-      gameReqFile : fs.createWriteStream(`dumps/${key}.gameReq.dump`),
-      ggRespFile : fs.createWriteStream(`dumps/${key}.ggResp.dump`),
-    }
   }
 
   get(req, reqBuffer, callback) {
@@ -102,11 +96,33 @@ class CacheLayer {
 
       // set headers before any writing happens
       let cachedResp = {
-        headers: ggResp.headers,
-        statusCode: ggResp.statusCode,
-        ggReqTimeStart: Date.now(),
-        buffer: new SmartBuffer(),
+
+        // request payload size
+        // response payload size
+        request: {
+          headers: gameReq.headers,
+          method: gameReq.method,
+          url: gameReq.url,
+          payloadSize: gameReq.toBuffer().size,
+          buffer: SmartBuffer.fromBuffer(gameReq)
+          dumpKey: gameReq.key, // used to find payload data
+
+          timeStart: null,
+          timeEnd: null,
+        }
+
+        response: {
+          statusCode: ggResp.statusCode,
+          headers: ggResp.headers,
+          payloadSize: null,    // size of buffer on disk
+          buffer: new SmartBuffer(),
+          dumpKey: key, // used to find payload data
+
+          timeStart: Date.now(),
+          timEnd: null,
+        }
       }
+
 
       ggResp.on('data', d => {
         // when we get payload data from gg, write it to cache and back to game
@@ -122,8 +138,8 @@ class CacheLayer {
       })
 
       // write response to log
-      const ggRespLog = fs.createWriteStream(`${process.env.GGST_DUMP_DIR}/${key}.ggResp.dump`)
-      ggResp.on('data', d => {
+      const ggRespLog = fs.createWriteStream(`${DUMP_DIR}/${key}.ggResp.dump`)
+      ggResp.on('data', data => {
         ggRespLog.write(data)
       })
 
@@ -204,7 +220,7 @@ function handleGameReq(gameReq, gameResp) {
     }
 
 
-    const gameReqLog = fs.createWriteStream(`${process.env.GGST_DUMP_DIR}/${key}.gameReq.dump`)
+    const gameReqLog = fs.createWriteStream(`${DUMP_DIR}/${key}.gameReq.dump`)
     gameReqLog.on('error', (e) => {
       console.error(`Error writing to gameReq dump file: ${e}`)
     })
