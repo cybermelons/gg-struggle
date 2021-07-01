@@ -6,6 +6,22 @@ const SmartBuffer = require('smart-buffer').SmartBuffer;
 
 const EXPIRE_TIME_MS = 1000 * 60 * 60 * 60 * 24 // max cache-age: 1 day
 
+//var sqlite3 = require('sqlite3').verbose();
+//var db = new sqlite3.Database(process.env.SQLITE_DB);
+//
+//db.run("CREATE TABLE IF NOT EXISTS ggstruggle (info TEXT)");
+//
+//var stmt = db.prepare("INSERT INTO lorem VALUES (?)");
+//for (var i = 0; i < 10; i++) {
+//    stmt.run("Ipsum " + i);
+//}
+//stmt.finalize();
+//
+//db.each("SELECT rowid AS id, info FROM lorem", function(err, row) {
+//    console.log(row.id + ": " + row.info);
+//});
+//
+//db.close();
 
 class CacheLayer {
   constructor() {
