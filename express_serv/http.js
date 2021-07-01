@@ -2,11 +2,14 @@ const http = require('http')
 const https = require('https')
 const hash = require('object-hash')
 const fs = require('fs')
+const sqlite3 = require('sqlite3')
 const SmartBuffer = require('smart-buffer').SmartBuffer;
 
 const EXPIRE_TIME_MS = 1000 * 60 * 60 * 60 * 24 // max cache-age: 1 day
 
 const DUMP_DIR = process.env.GGST_DUMP_DIR ? process.env.GGST_DUMP_DIR : './dumps/'
+
+const DB_FILE = process.env.GGST_SQLITE_DB ? process.env.GGST_SQLITE_DB  : 'gg-struggle.db'
 
 // [ ] time the times each route takes
 // [ ] sort routes by payload size
@@ -112,15 +115,12 @@ class CacheLayer {
         console.timeEnd(`gg-req ${key}`)
       })
 
-      // write response to log
-      const ggRespLog = fs.createWriteStream(`${DUMP_DIR}/${key}.ggResp.dump`)
       ggResp.on('data', data => {
-        ggRespLog.write(data)
+        cachedResponse.buffer.write(data)
       })
 
       ggResp.on('error', e => {
         console.error(`Error in response from gg servers: ${e}`)
-
         console.error(`Bailed on caching response from GG`)
         this.cache.remove(key)
         console.timeEnd(`gg-req ${key}`)
@@ -142,13 +142,12 @@ class CacheLayer {
     return key in this.cache.contains(key)
   }
 }
-var CACHE_LAYER = new CacheLayer()
-
-var DB = new DbLayer(process.env.GGST_SQLITE_DB, DUMP_DIR)
 
 class DbLayer {
-  constructor(dbFileName, dumpDir) {
-    this.db = new sqlite3.Database(dbFileName)
+  // responsible for saving the requests and responses
+
+  constructor(db, dumpDir) {
+    this.db = db
     this.dumpDir = dumpDir
 
     this.db.run(`CREATE TABLE IF NOT EXISTS requests (
@@ -178,7 +177,7 @@ class DbLayer {
 
   putRequest(gameReq) {
     // insert into db
-    this._writeDb(gameReq)
+    this._writeRequestDb(gameReq)
 
     // write to file
     const reqLog = fs.createWriteStream(`${DUMP_DIR}/${key}.gameReq.dump`)
@@ -227,6 +226,19 @@ function getCache() {
 }
 
 function getDb() {
+  if (! (DB) ) {
+    var sqldb = new sqlite3.Database(DB_FILE, (err) => {
+      if (err) {
+        console.error(`Error connecting to db ${dbFileName}: ${err}`)
+      }
+      else {
+        console.log(`Connected to db ${dbFileName}`)
+      }
+    })
+
+    DB = new DbLayer(sqldb, DUMP_DIR)
+  }
+
   return DB
 }
 
@@ -243,10 +255,12 @@ class GameRequest {
     this.payloadSize = 0
     this.buffer = SmartBuffer.fromBuffer(reqBuffer)
 
-    this.key = hash({this.url, this.method, this.buffer.toString()})
+    const { url, method } = httpReq
+    const body = reqBuffer.toString()
+    this.key = hash({url, method, body})
 
-    timeStart: Date.now(),
-    timeEnd: null,
+    this.timeStart =  Date.now()
+    this.timeEnd = null
   }
 
   write(data) {
@@ -269,7 +283,7 @@ function handleGameReq(httpReq, gameResp) {
 
   var reqBuffer = new SmartBuffer()
   httpReq.on('data', (d) => {
-    reqBuffer.write(d)
+    reqBuffer.writeBuffer(d)
   })
 
 
@@ -277,9 +291,9 @@ function handleGameReq(httpReq, gameResp) {
 
     const db = getDb()
     const respCache = getCache()
-    const gameReq = new GameRequest(gameReq, reqBuffer)
+    const gameReq = new GameRequest(httpReq, reqBuffer.toBuffer())
 
-    db.insertRequest(gameReq)
+    db.putRequest(gameReq)
 
     respCache.get(gameReq, (ggResp) => {
       // return response back to game
@@ -319,6 +333,8 @@ function handleGameReq(httpReq, gameResp) {
 }
 
 
+var CACHE_LAYER = new CacheLayer()
+var DB
 
 let createServer = http.createServer
 let serverOpts = {
@@ -340,7 +356,6 @@ if (isUsingHttps()) {
 }
 
 let app = createServer(serverOpts, handleGameReq)
-
 
 app.listen(serverOpts, () => {
   console.log(`Listening on ${serverOpts.port}`)
