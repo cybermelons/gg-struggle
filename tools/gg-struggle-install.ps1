@@ -1,14 +1,38 @@
+
+param([switch]$Elevated)
+  function Check-Admin {
+    $currentUser = New-Object Security.Principal.WindowsPrincipal $([Security.Principal.WindowsIdentity]::GetCurrent())
+      $currentUser.IsInRole([Security.Principal.WindowsBuiltinRole]::Administrator)
+  }
+if ((Check-Admin) -eq $false)  {
+  if ($elevated)
+  {
+    # could not elevate, quit
+  }
+
+  else {
+
+    Start-Process powershell.exe -Verb RunAs -ArgumentList ('-noprofile -noexit -file "{0}" -elevated' -f ($myinvocation.MyCommand.Definition))
+  }
+
+  exit
+}
+
+
+
+
 #Unblock-File -Path .\ggstproxy-install.ps1
 
+$ScriptDir = Split-Path $script:MyInvocation.MyCommand.Path
 # TODO: Resolve IP via DNS
 $proxyIp = "144.217.72.171"
 $mainHost = "ggst-game.guiltygear.com"
 $hostProxyString = "$proxyIp $mainHost"
-$certPath = "./certs/ggstruggle-cert.pem" # TODO: this is if you're in the same directory, but we can resolve this later
+$certPath = "$ScriptDir\certs\ggstruggle-cert.pem" # TODO: this is if you're in the same directory, but we can resolve this later
 $certThumbprint
 
 function Install-GgstProxy {
-    Write-Host 'Testing connection to $proxyIp...';
+    Write-Host "Testing connection to $proxyIp...";
     if(Test-Connection $proxyIp -Quiet -Count 1)
     {
         Write-Host "Successfully connected."
