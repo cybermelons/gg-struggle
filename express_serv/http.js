@@ -55,20 +55,20 @@ class CacheLayer {
     const key = this._makeKey(req, reqBuffer)
 
     if (this.contains(req, reqBuffer)) {
-      let payload = this.storage[key]
-      callback(this.storage[key])
+      let payload = this.db.get(key)
+      callback(payload)
 
       // only refresh items if expired
       if (Date.now() > payload.time + EXPIRE_TIME_MS) {
         this.fetchGg(req, reqBuffer, (data) => {
-          this.storage[key] = data
+          this.db.set(key, data)
         })
       }
     }
 
     else {
       this.fetchGg(req, reqBuffer, (data) => {
-        this.storage[key] = data
+        this.db.set(key, data)
         callback(data)
       })
     }
@@ -133,7 +133,8 @@ class CacheLayer {
         console.debug(`Writing ${req.url} ${req.method} ${key} to cache`)
         cachedResp.timeEnd = Date.now()
         cachedResp.payloadSize = cachedResp.buffer.toBuffer().size
-        this.storage[key] = cachedResp
+        this.db.set(key) = cachedResp
+
         callback(cachedResp)
         console.timeEnd(`gg-req ${key}`)
       })
@@ -148,7 +149,7 @@ class CacheLayer {
         console.error(`Error in response from gg servers: ${e}`)
 
         console.error(`Bailed on caching response from GG`)
-        delete this.storage[key]
+        this.db.remove(key)
         console.timeEnd(`gg-req ${key}`)
       })
     })
@@ -165,7 +166,7 @@ class CacheLayer {
   contains(req, reqBuffer) {
     // TODO invalidate old requests
     const key = this._makeKey(req, reqBuffer)
-    return key in this.storage
+    return key in this.db.contains(key)
   }
 }
 var CACHE_LAYER = new CacheLayer()
