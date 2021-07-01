@@ -178,13 +178,14 @@ class CacheLayer {
 }
 var CACHE_LAYER = new CacheLayer()
 
-var DB = new DbLayer(process.env.SQLITE_DB)
+var DB = new DbLayer(process.env.GGST_SQLITE_DB, DUMP_DIR)
 
 class DbLayer {
-  constructor(sqlite_filename) {
-    this.db = new sqlite3.Database(sqlite_filename)
+  constructor(dbFileName, dumpDir) {
+    this.db = new sqlite3.Database(dbFileName)
+    this.dumpDir = dumpDir
 
-    db.run(`CREATE TABLE IF NOT EXISTS requests (
+    this.db.run(`CREATE TABLE IF NOT EXISTS requests (
       dumpKey TEXT PRIMARY KEY,
       headers BLOB,
       method TEXT,
@@ -195,7 +196,7 @@ class DbLayer {
       timeEnd INTEGER,
     )`);
 
-    db.run(`CREATE TABLE IF NOT EXISTS responses (
+    this.db.run(`CREATE TABLE IF NOT EXISTS responses (
       dumpKey TEXT PRIMARY KEY,
       headers BLOB,
       method TEXT,
@@ -207,25 +208,31 @@ class DbLayer {
       timeEnd INTEGER,
     )`);
 
-        response: {
-
-          timeStart: Date.now(),
-          timeEnd: null,
-        }
-
-    var stmt = db.prepare("INSERT INTO lorem VALUES (?)");
-    for (var i = 0; i < 10; i++) {
-        stmt.run("Ipsum " + i);
-    }
-    stmt.finalize();
-
-    db.each("SELECT rowid AS id, info FROM lorem", function(err, row) {
-        console.log(row.id + ": " + row.info);
-    });
   }
 
   putRequest(req, reqBuffer) {
+    // insert into db
+    this._writeDb(req, reqBuffer)
+
+    // write to file
+    const reqLog = fs.createWriteStream(`${DUMP_DIR}/${key}.gameReq.dump`)
+    fs.write(reqBuffer.toBuffer())
   }
+
+  _writeDb(req, reqBuffer)
+  {
+    var stmt = db.prepare("INSERT INTO requests VALUES (?)");
+
+    for (var i = 0; i < 10; i++) {
+      const { dumpKey,
+      stmt.run({req})
+    }
+
+    stmt.finalize();
+  }
+
+
+
   putResponse(resp) {
   }
 }
@@ -240,6 +247,26 @@ function getDb() {
 
 function isUsingHttps() {
   return process.env.GGST_SSL_CERT && process.env.GGST_SSL_KEY
+}
+
+class GameRequest {
+  constructor(httpReq) {
+    this.headers = httpReq.headers
+    this.method = httpReq.method
+    this.url = httpReq.url
+
+    this.payloadSize = 0
+    this.buffer = SmartBuffer.fromBuffer(gameReq)
+
+    this.key = hash({this.url, this.method, this.buffer.toString()})
+
+    timeStart: Date.now(),
+    timeEnd: null,
+  }
+
+  write(data) {
+    this.buffer.writeBuffer(d)
+  }
 }
 
 
@@ -257,7 +284,7 @@ function handleGameReq(gameReq, gameResp) {
   // store the incoming request stream into a buffer
   var gameReqBuffer = new SmartBuffer()
   gameReq.on('data', (d) => {
-    gameReqBuffer.writeBuffer(d)
+    gameReq.write(d)
   })
 
 
