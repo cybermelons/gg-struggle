@@ -32,7 +32,14 @@ const DUMP_DIR = process.env.GGST_DUMP_DIR ? process.env.GGST_DUMP_DIR : './dump
 class CacheLayer {
   constructor() {
     // TODO use redis or something
-    this.storage = {}
+
+    // 3 layers of storage
+    this.cache = new Map() // in-memory
+
+    this.db = new sqlite3.Database(process.env.SQLITE_DB)
+                    // persistent
+
+                    // fetch data
   }
 
   _makeKey(req, reqBuffer) {
@@ -44,7 +51,7 @@ class CacheLayer {
   }
 
   get(req, reqBuffer, callback) {
-    // fetch the request's response and run callback on it.
+    // fetch and run callback on the response.
     // the response may either be cached or live.
     //
     // current caching strategy:
@@ -55,20 +62,20 @@ class CacheLayer {
     const key = this._makeKey(req, reqBuffer)
 
     if (this.contains(req, reqBuffer)) {
-      let payload = this.db.get(key)
+      let payload = this.cache.get(key)
       callback(payload)
 
       // only refresh items if expired
       if (Date.now() > payload.time + EXPIRE_TIME_MS) {
         this.fetchGg(req, reqBuffer, (data) => {
-          this.db.set(key, data)
+          this.cache.set(key, data)
         })
       }
     }
 
     else {
       this.fetchGg(req, reqBuffer, (data) => {
-        this.db.set(key, data)
+        this.cache.set(key, data)
         callback(data)
       })
     }
@@ -133,7 +140,7 @@ class CacheLayer {
         console.debug(`Writing ${req.url} ${req.method} ${key} to cache`)
         cachedResp.timeEnd = Date.now()
         cachedResp.payloadSize = cachedResp.buffer.toBuffer().size
-        this.db.set(key) = cachedResp
+        this.cache.set(key) = cachedResp
 
         callback(cachedResp)
         console.timeEnd(`gg-req ${key}`)
@@ -149,7 +156,7 @@ class CacheLayer {
         console.error(`Error in response from gg servers: ${e}`)
 
         console.error(`Bailed on caching response from GG`)
-        this.db.remove(key)
+        this.cache.remove(key)
         console.timeEnd(`gg-req ${key}`)
       })
     })
@@ -166,7 +173,7 @@ class CacheLayer {
   contains(req, reqBuffer) {
     // TODO invalidate old requests
     const key = this._makeKey(req, reqBuffer)
-    return key in this.db.contains(key)
+    return key in this.cache.contains(key)
   }
 }
 var CACHE_LAYER = new CacheLayer()
