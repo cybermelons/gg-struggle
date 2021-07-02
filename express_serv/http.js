@@ -12,11 +12,6 @@ const DUMP_DIR = process.env.GGST_DUMP_DIR ? process.env.GGST_DUMP_DIR : './dump
 
 const DB_FILE = process.env.GGST_SQLITE_DB ? process.env.GGST_SQLITE_DB  : 'gg-struggle.db'
 
-// [ ] time the times each route takes
-// [ ] sort routes by payload size
-// [ ] sort routes by average time taken
-// /api/route POST data=abcd1234 -> binarydata..{}.
-//
 class CacheLayer extends EventEmitter {
   constructor(props) {
     super(props)
