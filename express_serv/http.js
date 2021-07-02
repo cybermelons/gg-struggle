@@ -39,8 +39,8 @@ class CacheLayer extends EventEmitter {
       let ggResp = this.cache.get(key)
       callback(ggResp)
 
-      // only refresh items if expired
-      if (Date.now() > ggResp.timeStart + EXPIRE_TIME_MS) {
+      // refresh items if expired
+      if (Date.now() > ggResp.expireTime) {
         console.log(`[CACHE] Refreshing key because expired: ${gameReq.key}`)
         this.fetchGg(gameReq, (data) => {
           this.emit('fetch', data)
@@ -89,6 +89,7 @@ class CacheLayer extends EventEmitter {
 
       timeStart: Date.now(),
       timeEnd: null,
+      expireTime: Date.now() + EXPIRE_TIME_MS
     }
 
     const ggReq = https.request(options, (ggResp) => {
