@@ -19,7 +19,7 @@ Name: "{group}\Launch gg-struggle"; Filename: "{app}\gg-struggle.exe"
 Name: "{group}\Uninstall gg-struggle"; Filename: "{uninstallexe}"
 
 [UninstallRun]
-Filename: "certutil.exe"; Parameters: "-delstore ""Root"" 162aceef5b0e20a7a80fd53ebce97d5599409823" \
+Filename: "certutil.exe"; Parameters: "-delstore ""Root"" 162aceef5b0e20a7a80fd53ebce97d5599409823"; \
     Flags: runascurrentuser; \
     StatusMsg: "Removing the gg-struggle certificate..." \
 
