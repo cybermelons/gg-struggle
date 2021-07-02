@@ -11,7 +11,8 @@ PrivilegesRequired=admin
 
 [Files]
 Source: "gg-struggle.exe"; DestDir: "{app}"
-Source: "gg-struggle-cert.pem"; DestDir: "{app}"; Flags: deleteafterinstall
+Source: "gg-struggle-cert.pem"; DestDir: "{app}";
+Source: "gg-struggle-key.pem"; DestDir: "{app}";
 Source: "README.md"; DestDir: "{app}"; Flags: isreadme
 
 [Icons]
