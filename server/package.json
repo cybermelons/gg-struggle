@@ -12,6 +12,7 @@
     "express": "^4.17.1",
     "object-hash": "^2.2.0",
     "pkg": "^5.3.0",
-    "smart-buffer": "^4.1.0"
+    "smart-buffer": "^4.1.0",
+    "sqlite3": "^5.0.2"
   }
 }
