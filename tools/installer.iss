@@ -13,6 +13,7 @@ PrivilegesRequired=admin
 Source: "gg-struggle.exe"; DestDir: "{app}"
 Source: "gg-struggle-cert.pem"; DestDir: "{app}";
 Source: "gg-struggle-key.pem"; DestDir: "{app}";
+Source: "node_modules\sqlite3\lib\binding\napi-v3-win32-x64\node_sqlite3.node"; DestDir: "{app}\node_modules\sqlite3\lib\binding\napi-v3-win32-x64"
 Source: "README.md"; DestDir: "{app}"; Flags: isreadme
 
 [Icons]
@@ -22,13 +23,15 @@ Name: "{group}\Uninstall gg-struggle"; Filename: "{uninstallexe}"
 [UninstallRun]
 Filename: "certutil.exe"; Parameters: "-delstore ""Root"" 162aceef5b0e20a7a80fd53ebce97d5599409823"; \
     Flags: runascurrentuser; \
-    StatusMsg: "Removing the gg-struggle certificate..." \
+    StatusMsg: "Removing the gg-struggle certificate..."; \
+    AfterInstall: UnPatchHostsFile
 
 
 [Run]
-Filename: "certutil.exe"; Parameters: "-addstore ""Root"" {app}\gg-struggle-cert.pem"; \
+Filename: "certutil.exe"; Parameters: "-addstore ""Root"" ""{app}\gg-struggle-cert.pem"" "; \
     Flags: runascurrentuser; \
-    StatusMsg: "Installing gg-struggle certificate to Windows Root Certificate Store..." \
+    StatusMsg: "Installing gg-struggle certificate to Windows Root Certificate Store..."; \
+    AfterInstall: PatchHostsFile 
 
 
 [Code]
@@ -49,12 +52,50 @@ begin
   end;
   statement := '127.0.0.1 ggst-game.guiltygear.com';
   if(contents.IndexOf(statement) < 0) then begin
-    Log('Adding' + statement);
+    Log('Adding line to hosts file: ' + statement);
     contents.Append(statement);
     try
       contents.SaveToFile(filename);
     except
       MsgBox('Unable to write to ' + filename + '.  To improve compatibility with Windows, we''d advise you to add this line manually:' + #13#10#13#10 + statement + #13#10#13#10 + 'Installation will continue after pressing OK.', mbInformation, MB_OK);
     end;
+  end;
+end;
+
+procedure UnPatchHostsFile();
+var
+  contents: TStringList;
+  filename, statement: String;
+begin
+  filename := ExpandConstant('{sys}\drivers\etc\hosts');
+  Log('Reading ' + filename);
+  contents := TStringList.Create();
+  if(FileExists(filename)) then begin
+    contents.LoadFromFile(filename);
+  end;
+  statement := '127.0.0.1 ggst-game.guiltygear.com';
+  if(contents.IndexOf(statement) >= 0) then begin
+    Log('Removing line from hosts file: ' + statement);
+    contents.Delete(contents.IndexOf(statement));
+    try
+      contents.SaveToFile(filename);
+    except
+      MsgBox('Unable to write to ' + filename + '.  To improve compatibility with Windows, we''d advise you to add this line manually:' + #13#10#13#10 + statement + #13#10#13#10 + 'Installation will continue after pressing OK.', mbInformation, MB_OK);
+    end;
+  end;
+end;
+
+
+procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+begin
+  case CurUninstallStep of
+    usUninstall:
+      begin
+        UnPatchHostsFile;
+      end;
+    usPostUninstall:
+      begin
+        // thanks https://github.com/HeliumProject/InnoSetup/blob/master/Examples/UninstallCodeExample1.iss
+      end;
   end;
 end;
