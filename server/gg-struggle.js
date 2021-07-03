@@ -251,14 +251,14 @@ function getCache() {
 }
 
 var DB
-function getDb(dumpDir) {
+function getDb(dbFile, dumpDir) {
   if (! (DB) ) {
-    var sqldb = new sqlite3.Database(DB_FILE, (err) => {
+    var sqldb = new sqlite3.Database(dbFile, (err) => {
       if (err) {
-        console.error(`[DB] Error connecting to db ${DB_FILE}: ${err}`)
+        console.error(`[DB] Error connecting to db ${dbFile}: ${err}`)
       }
       else {
-        console.log(`[DB] Connected to db ${DB_FILE}`)
+        console.log(`[DB] Connected to db ${dbFile}`)
       }
     })
 

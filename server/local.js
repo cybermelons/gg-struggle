@@ -9,8 +9,8 @@ let options = {
   key: fs.readFileSync('./gg-struggle-key.pem'),
   passphrase: 'totsugeki',
   port: 443,
-  dumpDir: './dumps',
-  sqliteDb: './gg-struggle.db',
+  dumpDir: process.env.TEMP + '/gg-struggle/dumps',
+  sqliteDb: process.env.TEMP + '/gg-struggle/gg-struggle.db',
 }
 
 let app = ggstruggle.createLocalServer(options)
