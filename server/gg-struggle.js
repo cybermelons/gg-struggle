@@ -25,6 +25,7 @@ class CacheLayer extends EventEmitter {
     this.cache = new Map() // in-memory
                            // persistent
                            // fetch data
+    this.ggHost = props.ggHost
   }
 
   get(gameReq, callback) {
@@ -63,14 +64,16 @@ class CacheLayer extends EventEmitter {
     }
   }
 
-  fetchGg(gameReq, callback) {
+  fetchGg = (gameReq, callback) => {
     const key = gameReq.key
     const options = {
-      hostname: 'ggst-game.guiltygear.com',
+      //hostname: 'ggst-game.guiltygear.com',
+      hostname: this.ggHost,
       port: 443,
       path: gameReq.url,
       method: gameReq.method,
       headers: {
+        'Host': 'ggst-game.guiltygear.com',
         'user-agent': 'Steam',
         'accept': '*/*',
         'content-type': 'application/x-www-form-urlencoded',
@@ -241,14 +244,6 @@ class DbLayer {
   }
 }
 
-var CACHE_LAYER
-function getCache() {
-  if (! (CACHE_LAYER)) {
-    CACHE_LAYER = new CacheLayer()
-  }
-
-  return CACHE_LAYER
-}
 
 var DB
 function getDb(dbFile, dumpDir) {
@@ -302,8 +297,9 @@ class GgStruggleServer {
     this.options = options
 
     // set up cache and database
-    this.respCache = new CacheLayer()
-    this.db = getDb(options.sqliteDb, options.dumpDir)
+    this.respCache = new CacheLayer(options)
+    var db = getDb(options.sqliteDb, options.dumpDir)
+    this.db = db
 
     // log real server responses whenever the cache hits it
     this.respCache.on('fetch', (ggResp) => {
@@ -336,7 +332,7 @@ class GgStruggleServer {
   }
 
 
-  handleGameReq(httpReq, gameResp) {
+  handleGameReq = (httpReq, gameResp) => {
     console.time('gg-struggle api request')
 
     // time the response
@@ -376,7 +372,7 @@ class GgStruggleServer {
       gameResp.on('close', () => {
         console.log(`[DB] Updating end time on req ${gameReq.key}`)
         gameReq.timeEnd = Date.now()
-        db.updateRequestTime(gameReq)
+        this.db.updateRequestTime(gameReq)
       })
 
     })

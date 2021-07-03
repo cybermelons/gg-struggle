@@ -11,6 +11,7 @@ let options = {
   port: 443,
   dumpDir: process.env.TEMP + '/gg-struggle/dumps',
   sqliteDb: process.env.TEMP + '/gg-struggle/gg-struggle.db',
+  ggHost: 'ggst-game-real.guiltygear.com'
 }
 
 let app = ggstruggle.createLocalServer(options)

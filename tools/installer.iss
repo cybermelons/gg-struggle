@@ -24,25 +24,24 @@ Name: "{group}\Uninstall gg-struggle"; Filename: "{uninstallexe}"
 Filename: "certutil.exe"; Parameters: "-delstore ""Root"" 162aceef5b0e20a7a80fd53ebce97d5599409823"; \
     Flags: runascurrentuser; \
     StatusMsg: "Removing the gg-struggle certificate..."; \
-    AfterInstall: UnPatchHostsFile
+    AfterInstall: UnPatchHostsFile('127.0.0.1 ggst-game.guiltygear.com')
 
 
 [Run]
 Filename: "certutil.exe"; Parameters: "-addstore ""Root"" ""{app}\gg-struggle-cert.pem"" "; \
     Flags: runascurrentuser; \
     StatusMsg: "Installing gg-struggle certificate to Windows Root Certificate Store..."; \
-    AfterInstall: PatchHostsFile 
+    AfterInstall: PatchHostsFile('127.0.0.1 ggst-game.guiltygear.com')
 
 
 [Code]
 
 // Thanks to
 // https://github.com/cryptomator/cryptomator-win/blob/0d4eb079b988da00b1b36873c8b11da8fe842d4e/resources/innosetup/setup.iss#L178
-
-procedure PatchHostsFile();
+procedure PatchHostsFile(statement: String);
 var
   contents: TStringList;
-  filename, statement: String;
+  filename: String;
 begin
   filename := ExpandConstant('{sys}\drivers\etc\hosts');
   Log('Reading ' + filename);
@@ -62,10 +61,16 @@ begin
   end;
 end;
 
-procedure UnPatchHostsFile();
+procedure PatchBothHosts();
+begin
+  PatchHostsFile('127.0.0.1 ggst-game.guiltygear.com')
+  PatchHostsFile('3.112.119.46 ggst-game-real.guiltygear.com')
+end;
+
+procedure UnPatchHostsFile(statement: String);
 var
   contents: TStringList;
-  filename, statement: String;
+  filename: String;
 begin
   filename := ExpandConstant('{sys}\drivers\etc\hosts');
   Log('Reading ' + filename);
@@ -73,7 +78,6 @@ begin
   if(FileExists(filename)) then begin
     contents.LoadFromFile(filename);
   end;
-  statement := '127.0.0.1 ggst-game.guiltygear.com';
   if(contents.IndexOf(statement) >= 0) then begin
     Log('Removing line from hosts file: ' + statement);
     contents.Delete(contents.IndexOf(statement));
@@ -91,7 +95,8 @@ begin
   case CurUninstallStep of
     usUninstall:
       begin
-        UnPatchHostsFile;
+        UnPatchHostsFile('127.0.0.1 ggst-game.guiltygear.com')
+        UnPatchHostsFile('3.112.119.46 ggst-game-real.guiltygear.com')
       end;
     usPostUninstall:
       begin
