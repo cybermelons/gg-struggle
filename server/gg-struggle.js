@@ -298,12 +298,6 @@ class GameRequest {
 
 
 class GgStruggleServer {
-  listen() {
-    this.app.listen(this.options, () => {
-      console.log(`[PROXY] Listening on ${this.options.port}`)
-    })
-  }
-
   constructor(options) {
     this.options = options
 
@@ -335,6 +329,12 @@ class GgStruggleServer {
 
   }
 
+  listen() {
+    this.app.listen(this.options, () => {
+      console.log(`[PROXY] Listening on ${this.options.port}`)
+    })
+  }
+
 
   handleGameReq(httpReq, gameResp) {
     console.time('gg-struggle api request')
@@ -355,8 +355,6 @@ class GgStruggleServer {
       reqBuffer.writeBuffer(d)
     })
 
-    const db = this.db
-    const respCache = this.respCache
 
     httpReq.on('end', () => {
 
@@ -365,11 +363,11 @@ class GgStruggleServer {
       console.log(`[PROXY] ${gameReq.url} ${gameReq.method} ${gameReq.key}`)
 
       // store the game request and responses into a persistent db
-      db.putRequest(gameReq)
+      getDb().putRequest(gameReq)
 
 
       // copy the cache response back to user
-      respCache.get(gameReq, (ggResp) => {
+      this.respCache.get(gameReq, (ggResp) => {
         gameResp.writeHead(ggResp.statusCode, ggResp.headers)
         gameResp.end(ggResp.buffer.toBuffer())
       })
