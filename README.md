@@ -1,5 +1,7 @@
 # gg-struggle
 
+![Demo Video](media/ggmain.webm)
+
 ## tl;dr
 
 `gg-struggle` is a program that reduces loading times by caching
