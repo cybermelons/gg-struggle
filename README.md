@@ -1,9 +1,23 @@
-# gg-struggle 
+# gg-struggle
 
 ## tl;dr
 
+`gg-struggle` is a program that reduces loading times by caching
+the Guilty Gear server responses.
+
+### Usage
+
+1. Install using `install-gg-struggle.exe`.
+2. Start `gg-struggle`. Keep this console open while guilty gear is running.
+3. Start guilty gear: strive.
+
+## Overview
+
 This is a proxy webserver that caches responses from the guilty gear servers.
+`gg-struggle` is a local webserver that caches responses from the guilty
 This speeds up loading and menu times for regions furthest from Japan (NA, EU)
+
+I'll update this with more documentation as I have time
 
 ### Automated Install
 
@@ -11,7 +25,7 @@ Install using the `install-gg-struggle.exe` installer.
 
 1. run `install-gg-struggle.exe`
 2. Launch `gg-struggle.exe` through the start menu
-3. Load game 
+3. Load game
 
 NOTE: While installed, `gg-struggle` MUST be running while the game is up.
 You must uninstall to revert things to normal.
@@ -28,7 +42,7 @@ You must uninstall to revert things to normal.
 
 ## How It Works
 
-### Problem 
+### Problem
 
 When loading up the main menu, the guilty gear game downloads all your game
 data in several HTTP (100+) requests to the game servers. These requests
@@ -39,7 +53,6 @@ Each request has to go to Japan and back, ~250ms each way / ~500+ ms total.
 Multiply this by 100 requests and no wonder it can take it 5+ minutes.
 
 A good explanation of this can be found on reddit: [here](https://www.reddit.com/r/Guiltygear/comments/oaqwo5/analysis_of_network_traffic_at_game_startup)
-
 
 ### Solution
 
@@ -106,7 +119,7 @@ to coordinate gameplay. This only affects out-of-game stuff like menus.
 If everything goes wrong, **edit the hosts file to remove any line that
 says `ggst-game.guiltygear.com`**. You must restart the game afterwards.
 
-You should also remove the `gg-struggle` certificate by 
+You should also remove the `gg-struggle` certificate by
 
 1. Run `certmgr.msc` as admin
 2. Navigate to "Trusted Root Certifcation Authorities"
