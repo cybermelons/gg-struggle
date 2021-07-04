@@ -5,17 +5,10 @@ const fs = require('fs')
 const sqlite3 = require('sqlite3')
 const EventEmitter = require('events')
 const SmartBuffer = require('smart-buffer').SmartBuffer;
+const log4js = require('log4js')
 
 const EXPIRE_TIME_MS = 1000 * 60 * 60 * 60 * 24 // max cache-age: 1 day
 
-const DUMP_DIR = process.env.GGST_DUMP_DIR ? process.env.GGST_DUMP_DIR : './dumps/'
-const DB_FILE = process.env.GGST_SQLITE_DB ? process.env.GGST_SQLITE_DB  : 'gg-struggle.db'
-
-// [ ] time the times each route takes
-// [ ] sort routes by payload size
-// [ ] sort routes by average time taken
-// /api/route POST data=abcd1234 -> binarydata..{}.
-//
 class CacheLayer extends EventEmitter {
   constructor(props) {
     super(props)
@@ -48,7 +41,7 @@ class CacheLayer extends EventEmitter {
 
       // only refresh items if expired
       if (Date.now() > ggResp.timeStart + EXPIRE_TIME_MS) {
-        console.log(`[CACHE] Refreshing key because expired: ${gameReq.key}`)
+        log4js.getLogger().info(`[CACHE] Refreshing key because expired: ${gameReq.key}`)
         this.fetchGg(gameReq, (data) => {
           this.emit('fetch', data)
           this.set(key, data)
@@ -111,7 +104,7 @@ class CacheLayer extends EventEmitter {
       })
 
       ggResp.on('end', (e) => {
-        console.debug(`[CACHE] Writing response ${gameReq.url} ${gameReq.method} ${key} to cache`)
+        log4js.getLogger().debug(`[CACHE] Writing response ${gameReq.url} ${gameReq.method} ${key} to cache`)
         cachedResp.timeEnd = Date.now()
         cachedResp.payloadSize = cachedResp.buffer.toBuffer().length
         this.cache.set(gameReq.key, cachedResp)
@@ -121,8 +114,8 @@ class CacheLayer extends EventEmitter {
       })
 
       ggResp.on('error', e => {
-        console.error(`[CACHE] Error in response from gg servers: ${e}`)
-        console.error(`[CACHE] Bailed on caching response from GG`)
+        log4js.getLogger().error(`[CACHE] Error in response from gg servers: ${e}`)
+        log4js.getLogger().error(`[CACHE] Bailed on caching response from GG`)
         this.cache.remove(key)
         console.timeEnd(`gg-req ${key}`)
       })
@@ -205,7 +198,8 @@ class DbLayer {
 
     this.db.all( stmt, [], (err, rows) => {
       if (err) {
-        console.error(`[DB] Error reading ${key} from db: ${err}`)
+        const logger = log4js.getLogger()
+        logger.error(`[DB] Error reading ${key} from db: ${err}`)
         return
       }
 
@@ -243,7 +237,7 @@ class DbLayer {
 
           callback(gameReq, ggResp)
         } catch (err) {
-          console.error(`[DB] Error reading request ${key}: ${err}`)
+          log4js.getLogger().error(`[DB] Error reading request ${key}: ${err}`)
         }
       })
     })
@@ -252,7 +246,7 @@ class DbLayer {
   _readRequestDb = (key) => {
 
     stmt.on('error', (err) => {
-      console.error(`_writeRequestDb: Error writing request to db: ${err}`)
+      log4js.getLogger().error(`_writeRequestDb: Error writing request to db: ${err}`)
     })
 
     stmt.run(req.key, JSON.stringify(req.headers),
@@ -267,7 +261,7 @@ class DbLayer {
 
     // write to file
     const dumpFile = `${this.dumpDir}/${gameReq.key}.gameReq.dump`
-    console.log(`[DB] Dumping request to ${dumpFile}`)
+    log4js.getLogger().info(`[DB] Dumping request to ${dumpFile}`)
     const reqLog = fs.createWriteStream(dumpFile)
     reqLog.write(gameReq.buffer.toBuffer())
     reqLog.close()
@@ -279,7 +273,7 @@ class DbLayer {
     ;`);
 
     stmt.on('error', (err) => {
-      console.error(`_writeRequestDb: Error writing request to db: ${err}`)
+      log4js.getLogger().error(`_writeRequestDb: Error writing request to db: ${err}`)
     })
 
     stmt.run(req.key, JSON.stringify(req.headers),
@@ -295,7 +289,7 @@ class DbLayer {
       WHERE (dumpKey == ? AND timeStart == ?)
     ;`)
     stmt.on('error', (err) => {
-      console.error(`updateRequestTime: Error writing request to db: ${err}`)
+      log4js.getLogger().error(`updateRequestTime: Error writing request to db: ${err}`)
     })
     stmt.run(Date.now(), gameReq.key, gameReq.timeStart)
   }
@@ -308,7 +302,7 @@ class DbLayer {
     const dumpFile = `${this.dumpDir}/${resp.key}.ggResp.dump`
     const respLog = fs.createWriteStream(dumpFile)
 
-    console.log(`[DB] Dumping response to ${dumpFile}`)
+    log4js.getLogger().log(`[DB] Dumping response to ${dumpFile}`)
     respLog.write(resp.buffer.toBuffer())
     respLog.close()
   }
@@ -318,7 +312,7 @@ class DbLayer {
     var stmt = this.db.prepare(`INSERT INTO responses VALUES (?, ?, ?, ?, ?, ?, ?, ?) ;`)
 
     stmt.on('error', (err) => {
-      console.error(`_writeResponseDb: Error writing request to db: ${err}`)
+      log4js.getLogger().error(`_writeResponseDb: Error writing request to db: ${err}`)
     })
     stmt.run(resp.key, JSON.stringify(resp.headers),
       resp.method, resp.url,
@@ -333,10 +327,10 @@ function getDb(dbFile, dumpDir) {
   if (! (DB) ) {
     var sqldb = new sqlite3.Database(dbFile, (err) => {
       if (err) {
-        console.error(`[DB] Error connecting to db ${dbFile}: ${err}`)
+        log4js.getLogger().error(`[DB] Error connecting to db ${dbFile}: ${err}`)
       }
       else {
-        console.log(`[DB] Connected to db ${dbFile}`)
+        log4js.getLogger().log(`[DB] Connected to db ${dbFile}`)
       }
     })
 
@@ -380,29 +374,45 @@ class GgStruggleServer {
   constructor(options) {
     this.options = options
 
+    log4js.configure( {
+      appenders: {
+        everything: { type: 'file', filename: `${options.rootDir}/all.log`, },
+        out: { type: 'stdout' },
+        //error: { type: 'file', filename: `${options.rootDir}/error.log`, },
+        //info: { type: 'file', filename: `${options.rootDir}/info.log`, },
+      },
+      categories: {
+        default: { appenders: [ 'everything', 'out' ], level: 'info', },
+        //error: { appenders: [ 'error', 'everything' ], level: 'error', },
+        //info: { appenders: [ 'info', 'everything' ], level: 'info', },
+      },
+    })
+
+    const logger = log4js.getLogger()
+
     // set up cache and database
     this.respCache = new CacheLayer(options)
     var db = getDb(options.sqliteDb, options.dumpDir)
     this.db = db
 
-    console.log(`[DB] Loading entries ${options.sqliteDb}`)
+    logger.info(`[DB] Loading entries ${options.sqliteDb}`)
     db.forEachReqResp( (gameReq, ggResp) => {
       this.respCache.set(ggResp.key, ggResp)
-      //console.debug(`Loaded ${gameReq.key}`)
+      logger.debug(`Loaded ${gameReq.key}`)
     })
 
     // log real server responses whenever the cache hits it
     this.respCache.on('fetch', (ggResp) => {
-      console.log(`[DB] Storing ${ggResp.key} response into db`)
+      logger.info(`[DB] Storing ${ggResp.key} response into db`)
       db.putResponse(ggResp)
     })
 
     // enable some cache notifications
     this.respCache.on('cache-miss', (gameReq) => {
-      console.log(`[CACHE] Miss: ${gameReq.url} ${gameReq.method} ${gameReq.buffer.toBuffer()}`)
+      logger.info(`[CACHE] Miss: ${gameReq.url} ${gameReq.method} ${gameReq.buffer.toBuffer()}`)
     })
     this.respCache.on('cache-hit', (gameReq) => {
-      console.log(`[CACHE] Hit: ${gameReq.url} ${gameReq.method} ${gameReq.buffer.toBuffer()}`)
+      logger.info(`[CACHE] Hit: ${gameReq.url} ${gameReq.method} ${gameReq.buffer.toBuffer()}`)
     })
 
     // create the server
@@ -410,14 +420,14 @@ class GgStruggleServer {
     this.app = app
 
     app.on('clientError', (e, socket) => {
-      console.error(`[PROXY] Error connecting client via TLS: ${e}`)
+      logger.error(`[PROXY] Error connecting client via TLS: ${e}`)
     })
 
   }
 
   listen() {
     this.app.listen(this.options, () => {
-      console.log(`[PROXY] Listening on ${this.options.port}`)
+      log4js.getLogger().info(`[PROXY] Listening on ${this.options.port}`)
     })
   }
 
@@ -425,12 +435,14 @@ class GgStruggleServer {
   handleGameReq = (httpReq, gameResp) => {
     console.time('gg-struggle api request')
 
+    const logger = log4js.getLogger()
+
     // time the response
     gameResp.on('finish', () => {
       console.timeEnd('gg-struggle api request')
     })
     gameResp.on('error', (e) => {
-      console.error(`Error writing response to game: ${e}`)
+      logger.error(`Error writing response to game: ${e}`)
       console.timeEnd('gg-struggle api request')
     })
 
@@ -446,7 +458,7 @@ class GgStruggleServer {
 
       let gameReq = new GameRequest(httpReq, reqBuffer)
 
-      console.log(`[PROXY] ${gameReq.url} ${gameReq.method} ${gameReq.key}`)
+      logger.info(`[PROXY] ${gameReq.url} ${gameReq.method} ${gameReq.key}`)
 
       // store the game request and responses into a persistent db
       getDb().putRequest(gameReq)
@@ -460,7 +472,7 @@ class GgStruggleServer {
 
       // record the time we respond to the game
       gameResp.on('close', () => {
-        console.log(`[DB] Updating end time on req ${gameReq.key}`)
+        log4js.getLogger().debug(`[DB] Updating end time on req ${gameReq.key}`)
         gameReq.timeEnd = Date.now()
         this.db.updateRequestTime(gameReq)
       })

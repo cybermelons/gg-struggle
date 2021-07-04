@@ -10,11 +10,11 @@ UninstallDisplayIcon={app}\UninstallGGstruggle.exe
 PrivilegesRequired=admin
 
 [Files]
-Source: "gg-struggle.exe"; DestDir: "{app}"
+Source: "gg-struggle.exe"; DestDir: "{app}"; postinstall 
 Source: "gg-struggle-cert.pem"; DestDir: "{app}";
 Source: "gg-struggle-key.pem"; DestDir: "{app}";
 Source: "node_modules\sqlite3\lib\binding\napi-v3-win32-x64\node_sqlite3.node"; DestDir: "{app}\node_modules\sqlite3\lib\binding\napi-v3-win32-x64"
-Source: "README.md"; DestDir: "{app}"; Flags: isreadme
+Source: "README.md"; DestDir: "{app}";
 
 [Icons]
 Name: "{group}\Launch gg-struggle"; Filename: "{app}\gg-struggle.exe"
@@ -24,14 +24,14 @@ Name: "{group}\Uninstall gg-struggle"; Filename: "{uninstallexe}"
 Filename: "certutil.exe"; Parameters: "-delstore ""Root"" 162aceef5b0e20a7a80fd53ebce97d5599409823"; \
     Flags: runascurrentuser; \
     StatusMsg: "Removing the gg-struggle certificate..."; \
-    AfterInstall: UnPatchHostsFile('127.0.0.1 ggst-game.guiltygear.com')
+    AfterInstall: UnPatchBothHosts
 
 
 [Run]
 Filename: "certutil.exe"; Parameters: "-addstore ""Root"" ""{app}\gg-struggle-cert.pem"" "; \
     Flags: runascurrentuser; \
     StatusMsg: "Installing gg-struggle certificate to Windows Root Certificate Store..."; \
-    AfterInstall: PatchHostsFile('127.0.0.1 ggst-game.guiltygear.com')
+    AfterInstall: PatchBothHosts
 
 
 [Code]
@@ -59,13 +59,8 @@ begin
       MsgBox('Unable to write to ' + filename + '.  To improve compatibility with Windows, we''d advise you to add this line manually:' + #13#10#13#10 + statement + #13#10#13#10 + 'Installation will continue after pressing OK.', mbInformation, MB_OK);
     end;
   end;
-end;
+end;   
 
-procedure PatchBothHosts();
-begin
-  PatchHostsFile('127.0.0.1 ggst-game.guiltygear.com')
-  PatchHostsFile('3.112.119.46 ggst-game-real.guiltygear.com')
-end;
 
 procedure UnPatchHostsFile(statement: String);
 var
@@ -88,6 +83,19 @@ begin
     end;
   end;
 end;
+
+procedure UnPatchBothHosts();
+begin
+  UnPatchHostsFile('127.0.0.1 ggst-game.guiltygear.com')
+  UnPatchHostsFile('3.112.119.46 ggst-game-real.guiltygear.com')
+end;
+
+procedure PatchBothHosts();
+begin
+  PatchHostsFile('127.0.0.1 ggst-game.guiltygear.com')
+  PatchHostsFile('3.112.119.46 ggst-game-real.guiltygear.com')
+end;
+
 
 
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
