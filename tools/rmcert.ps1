@@ -1,14 +1,18 @@
 # NOTE: This must be run as admin!
 
-$storeMy = "Cert:\LocalMachine\My"
-$storeRoot = "Cert:\LocalMachine\Root"
-
-$certs = Get-ChildItem $storeRoot `
- | where{$_.Subject -eq "CN=ggst-game.guiltygear.com"}
 
 # Install cert from the My store into Root store
-Foreach ($cert in $certs) {
-  $certId = $cert.Thumbprint
-  Remove-Item -path $storeRoot\$certId
-  Write-Host "Removed $storeRoot\$certId from the root certs"
+function Remove-Gg-Certs {
+  param (
+    [string[]]$StorePath
+  )
+
+  Foreach ($cert in Get-ChildItem $StorePath ` | where{$_.Subject -eq "CN=ggst-game.guiltygear.com"}) {
+    $certId = $cert.Thumbprint
+    Remove-Item -path $StorePath\$certId
+    Write-Host "Removed $StorePath\$certId "
+  }
 }
+
+Remove-Gg-Certs -StorePath "Cert:\LocalMachine\My"
+Remove-Gg-Certs -StorePath "Cert:\LocalMachine\Root"
