@@ -10,7 +10,7 @@ this takes ~20ms/req.
 
 ### Usage
 
-1. Install using `install-gg-struggle.exe`.
+1. Install using `install-gg-struggle.exe`. **[Download here](https://git.yeet.st/attachments/141bca1c-fc95-43fb-9209-8cb29e45c5a9)**
 2. Start `gg-struggle`. Keep this console open while guilty gear is running.
 3. Start guilty gear: strive.
 
