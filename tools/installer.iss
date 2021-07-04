@@ -10,9 +10,8 @@ UninstallDisplayIcon={app}\UninstallGGstruggle.exe
 PrivilegesRequired=admin
 
 [Files]
-Source: "gg-struggle.exe"; DestDir: "{app}";
-Source: "gg-struggle-cert.pem"; DestDir: "{app}";
-Source: "gg-struggle-key.pem"; DestDir: "{app}";
+Source: "rmcert.ps1"; DestDir: "{app}";
+Source: "gencert.ps1"; DestDir: "{app}";
 Source: "node_modules\sqlite3\lib\binding\napi-v3-win32-x64\node_sqlite3.node"; DestDir: "{app}\node_modules\sqlite3\lib\binding\napi-v3-win32-x64"
 Source: "README.md"; DestDir: "{app}";
 
@@ -21,17 +20,30 @@ Name: "{group}\Launch gg-struggle"; Filename: "{app}\gg-struggle.exe"
 Name: "{group}\Uninstall gg-struggle"; Filename: "{uninstallexe}"
 
 [UninstallRun]
-Filename: "certutil.exe"; Parameters: "-delstore ""Root"" 162aceef5b0e20a7a80fd53ebce97d5599409823"; \
+; TODO add this as a remote installation option
+;Filename: "certutil.exe"; Parameters: "-delstore ""Root"" 162aceef5b0e20a7a80fd53ebce97d5599409823"; \
+;    Flags: runascurrentuser; \
+;    StatusMsg: "Removing the gg-struggle certificate..."; \
+;    AfterInstall: UnPatchBothHosts
+
+Filename: "powershell.exe"; Parameters: "-ExecutionPolicy Bypass -File rmcert.ps1 ""{app}"" "; \
+    WorkingDir: {app}; \
     Flags: runascurrentuser; \
     StatusMsg: "Removing the gg-struggle certificate..."; \
-    AfterInstall: UnPatchBothHosts
-
+    BeforeInstall: UnPatchBothHosts
 
 [Run]
-Filename: "certutil.exe"; Parameters: "-addstore ""Root"" ""{app}\gg-struggle-cert.pem"" "; \
+;Filename: "certutil.exe"; Parameters: "-addstore ""Root"" ""{app}\gg-struggle-cert.pem"" "; \
+;    Flags: runascurrentuser; \
+;    StatusMsg: "Installing gg-struggle certificate to Windows Root Certificate Store..."; \
+;    AfterInstall: PatchBothHosts
+
+Filename: "powershell.exe"; Parameters: "-ExecutionPolicy Bypass -File ""gencert.ps1"" ""{app}"" "; \
+    WorkingDir: {app}; \
     Flags: runascurrentuser; \
-    StatusMsg: "Installing gg-struggle certificate to Windows Root Certificate Store..."; \
+    StatusMsg: "Generating a self-signed gg-struggle certificate..."; \
     AfterInstall: PatchBothHosts
+
 
 Filename: {app}\gg-struggle.exe; Description: {cm:LaunchProgram,{cm:AppName}}; Flags: nowait postinstall skipifsilent
 
@@ -63,7 +75,7 @@ begin
       MsgBox('Unable to write to ' + filename + '.  To improve compatibility with Windows, we''d advise you to add this line manually:' + #13#10#13#10 + statement + #13#10#13#10 + 'Installation will continue after pressing OK.', mbInformation, MB_OK);
     end;
   end;
-end;   
+end;
 
 
 procedure UnPatchHostsFile(statement: String);

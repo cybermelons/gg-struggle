@@ -7,6 +7,6 @@ WORKDIR /gg-struggle/
 
 RUN cd /gg-struggle/ &&  mkdir /gg-struggle/dumps && npm install
 
-EXPOSE 3000
+EXPOSE 443
 
-CMD [ "node", "http.js" ]
+CMD [ "node", "." ]
