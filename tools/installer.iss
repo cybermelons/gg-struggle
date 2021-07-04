@@ -13,7 +13,7 @@ PrivilegesRequired=admin
 Source: "rmcert.ps1"; DestDir: "{app}";
 Source: "gencert.ps1"; DestDir: "{app}";
 Source: "node_modules\sqlite3\lib\binding\napi-v3-win32-x64\node_sqlite3.node"; DestDir: "{app}\node_modules\sqlite3\lib\binding\napi-v3-win32-x64"
-Source: "README.md"; DestDir: "{app}";
+Source: "../README.md"; DestDir: "{app}";
 
 [Icons]
 Name: "{group}\Launch gg-struggle"; Filename: "{app}\gg-struggle.exe"
