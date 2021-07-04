@@ -12,6 +12,7 @@ this takes ~20ms/req.
 
 1. Install using `install-gg-struggle.exe`. **[Download here](https://git.yeet.st/attachments/141bca1c-fc95-43fb-9209-8cb29e45c5a9)**
 2. Start `gg-struggle`. Keep this console open while guilty gear is running.
+    - if it does not start, create the directory `%TEMP%/gg-struggle/dumps`.
 3. Start guilty gear: strive.
 
 NOTE: While installed, `gg-struggle` MUST be running while the game is up.
