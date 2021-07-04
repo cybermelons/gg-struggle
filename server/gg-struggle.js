@@ -19,16 +19,18 @@ const DB_FILE = process.env.GGST_SQLITE_DB ? process.env.GGST_SQLITE_DB  : 'gg-s
 class CacheLayer extends EventEmitter {
   constructor(props) {
     super(props)
-    // TODO use redis or something
-
     // 3 layers of storage
-    this.cache = new Map() // in-memory
-                           // persistent
-                           // fetch data
+    this.cache = new Map() // 1. in-memory
+                           // 2. persistent
+                           // 3. fetch data
     this.ggHost = props.ggHost
   }
 
-  get(gameReq, callback) {
+  set = (key, ggResp) => {
+    this.cache.set(key, ggResp)
+  }
+
+  get = (gameReq, callback) => {
     // fetch and run callback on the response.
     // the response may either be cached or live.
     //
@@ -49,7 +51,7 @@ class CacheLayer extends EventEmitter {
         console.log(`[CACHE] Refreshing key because expired: ${gameReq.key}`)
         this.fetchGg(gameReq, (data) => {
           this.emit('fetch', data)
-          this.cache.set(key, data)
+          this.set(key, data)
         })
       }
     }
@@ -58,7 +60,7 @@ class CacheLayer extends EventEmitter {
       this.emit('cache-miss', gameReq)
       this.fetchGg(gameReq, (data) => {
         this.emit('fetch', data)
-        this.cache.set(key, data)
+        this.set(key, data)
         callback(data)
       })
     }
@@ -149,8 +151,7 @@ class DbLayer {
     this.dumpDir = dumpDir
   }
 
-  init()
-  {
+  init = () => {
     this.db.serialize( () => {
       this.db.run(`CREATE TABLE IF NOT EXISTS requests (
         dumpKey TEXT PRIMARY KEY ON CONFLICT IGNORE,
@@ -176,6 +177,88 @@ class DbLayer {
       );`)
       ;
     })
+
+    // make sure the dump directory exists
+    if (!fs.existsSync(this.dumpDir)) {
+      fs.mkdirSync(this.dumpDir)
+    }
+  }
+
+  forEachReqResp = (callback) => {
+    const stmt = `
+      SELECT
+        req.dumpkey as dumpKey,
+        req.url as url,
+        req.method as method,
+        req.headers as reqHeaders,
+        req.timeStart as reqTimeStart,
+        req.timeEnd as reqTimeEnd,
+
+        resp.statusCode as respStatusCode,
+        resp.headers as respHeaders,
+        resp.payloadSize as respPayloadSize,
+        resp.timeStart as respTimeStart,
+        resp.timeEnd as respTimeEnd
+      FROM requests AS req
+      LEFT JOIN responses AS resp USING (dumpKey)
+    `
+
+    this.db.all( stmt, [], (err, rows) => {
+      if (err) {
+        console.error(`[DB] Error reading ${key} from db: ${err}`)
+        return
+      }
+
+      rows.forEach( (row) => {
+        const key = row.dumpKey
+
+        try {
+          const reqFile = `${this.dumpDir}/${key}.gameReq.dump`
+          const respFile = `${this.dumpDir}/${key}.ggResp.dump`
+          const httpReq = {
+            headers: JSON.parse(row.reqHeaders),
+            method: row.method,
+            url: row.url,
+          }
+
+          const reqBuffer = new SmartBuffer()
+          reqBuffer.writeBuffer(fs.readFileSync(reqFile))   // not very node-like but whatever
+
+          const gameReq = new GameRequest(httpReq, reqBuffer)
+
+          const ggResp = {
+            statusCode: row.respStatusCode,
+            headers: JSON.parse(row.respHeaders),
+            payloadSize: row.respPayloadSize,
+            buffer: new SmartBuffer(),
+
+            key: row.dumpKey, // used to find payload data
+            url: row.url,
+            method: row.method,
+
+            timeStart: row.respTimeStart,
+            timeEnd: row.respTimeEnd,
+          }
+          ggResp.buffer.writeBuffer(fs.readFileSync(respFile))
+
+          callback(gameReq, ggResp)
+        } catch (err) {
+          console.error(`[DB] Error reading request ${key}: ${err}`)
+        }
+      })
+    })
+  }
+
+  _readRequestDb = (key) => {
+
+    stmt.on('error', (err) => {
+      console.error(`_writeRequestDb: Error writing request to db: ${err}`)
+    })
+
+    stmt.run(req.key, JSON.stringify(req.headers),
+      req.method, req.url,
+      req.payloadSize,
+      req.timeStart, req.timeEnd)
   }
 
   putRequest(gameReq) {
@@ -287,6 +370,7 @@ class GameRequest {
 
   write(data) {
     this.buffer.writeBuffer(d)
+    this.payloadSize = reqBuffer.toBuffer().length
   }
 }
 
@@ -300,6 +384,12 @@ class GgStruggleServer {
     this.respCache = new CacheLayer(options)
     var db = getDb(options.sqliteDb, options.dumpDir)
     this.db = db
+
+    console.log(`[DB] Loading entries ${options.sqliteDb}`)
+    db.forEachReqResp( (gameReq, ggResp) => {
+      this.respCache.set(ggResp.key, ggResp)
+      //console.debug(`Loaded ${gameReq.key}`)
+    })
 
     // log real server responses whenever the cache hits it
     this.respCache.on('fetch', (ggResp) => {
