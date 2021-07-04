@@ -10,7 +10,7 @@ UninstallDisplayIcon={app}\UninstallGGstruggle.exe
 PrivilegesRequired=admin
 
 [Files]
-Source: "gg-struggle.exe"; DestDir: "{app}"; postinstall 
+Source: "gg-struggle.exe"; DestDir: "{app}";
 Source: "gg-struggle-cert.pem"; DestDir: "{app}";
 Source: "gg-struggle-key.pem"; DestDir: "{app}";
 Source: "node_modules\sqlite3\lib\binding\napi-v3-win32-x64\node_sqlite3.node"; DestDir: "{app}\node_modules\sqlite3\lib\binding\napi-v3-win32-x64"
@@ -33,6 +33,11 @@ Filename: "certutil.exe"; Parameters: "-addstore ""Root"" ""{app}\gg-struggle-ce
     StatusMsg: "Installing gg-struggle certificate to Windows Root Certificate Store..."; \
     AfterInstall: PatchBothHosts
 
+Filename: {app}\gg-struggle.exe; Description: {cm:LaunchProgram,{cm:AppName}}; Flags: nowait postinstall skipifsilent
+
+[CustomMessages]
+AppName=gg-struggle
+LaunchProgram=Start gg-struggle after finishing installation
 
 [Code]
 
@@ -49,7 +54,6 @@ begin
   if(FileExists(filename)) then begin
     contents.LoadFromFile(filename);
   end;
-  statement := '127.0.0.1 ggst-game.guiltygear.com';
   if(contents.IndexOf(statement) < 0) then begin
     Log('Adding line to hosts file: ' + statement);
     contents.Append(statement);
@@ -86,14 +90,14 @@ end;
 
 procedure UnPatchBothHosts();
 begin
-  UnPatchHostsFile('127.0.0.1 ggst-game.guiltygear.com')
-  UnPatchHostsFile('3.112.119.46 ggst-game-real.guiltygear.com')
+  UnPatchHostsFile('127.0.0.1 ggst-game.guiltygear.com');
+  UnPatchHostsFile('3.112.119.46 ggst-game-real.guiltygear.com');
 end;
 
 procedure PatchBothHosts();
 begin
-  PatchHostsFile('127.0.0.1 ggst-game.guiltygear.com')
-  PatchHostsFile('3.112.119.46 ggst-game-real.guiltygear.com')
+  PatchHostsFile('127.0.0.1 ggst-game.guiltygear.com');
+  PatchHostsFile('3.112.119.46 ggst-game-real.guiltygear.com');
 end;
 
 
