@@ -1,4 +1,5 @@
 ; -- gg-struggle installer --
+; run this from the tools/ directory
 
 [Setup]
 AppName=gg-struggle
@@ -10,10 +11,11 @@ UninstallDisplayIcon={app}\UninstallGGstruggle.exe
 PrivilegesRequired=admin
 
 [Files]
+Source: "..\server\gg-struggle.exe"; DestDir: "{app}";
 Source: "rmcert.ps1"; DestDir: "{app}";
 Source: "gencert.ps1"; DestDir: "{app}";
-Source: "node_modules\sqlite3\lib\binding\napi-v3-win32-x64\node_sqlite3.node"; DestDir: "{app}\node_modules\sqlite3\lib\binding\napi-v3-win32-x64"
-Source: "../README.md"; DestDir: "{app}";
+Source: "..\server\node_modules\sqlite3\lib\binding\napi-v3-win32-x64\node_sqlite3.node"; DestDir: "{app}\node_modules\sqlite3\lib\binding\napi-v3-win32-x64"
+Source: "..\README.md"; DestDir: "{app}";
 
 [Icons]
 Name: "{group}\Launch gg-struggle"; Filename: "{app}\gg-struggle.exe"
