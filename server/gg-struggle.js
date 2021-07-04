@@ -409,10 +409,10 @@ class GgStruggleServer {
 
     // enable some cache notifications
     this.respCache.on('cache-miss', (gameReq) => {
-      logger.info(`[CACHE] Miss: ${gameReq.url} ${gameReq.method} ${gameReq.buffer.toBuffer()}`)
+      logger.info(`[CACHE] Miss: ${gameReq.url} ${gameReq.method} ${gameReq.key}`)
     })
     this.respCache.on('cache-hit', (gameReq) => {
-      logger.info(`[CACHE] Hit: ${gameReq.url} ${gameReq.method} ${gameReq.buffer.toBuffer()}`)
+      logger.info(`[CACHE] Hit: ${gameReq.url} ${gameReq.method} ${gameReq.key}`)
     })
 
     // create the server
