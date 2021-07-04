@@ -1,6 +1,7 @@
+# NOTE: This must be run as admin!
+
 $storeMy = "Cert:\LocalMachine\My"
 $storeRoot = "Cert:\LocalMachine\Root"
-
 
 New-SelfSignedCertificate `
   -KeyLength 4096 `
@@ -14,28 +15,10 @@ New-SelfSignedCertificate `
 $certs = Get-ChildItem $storeMy `
  | where{$_.Subject -eq "CN=ggst-game.guiltygear.com"}
 
+# Install cert from the My store into Root store
 Foreach ($cert in $certs) {
   $certId = $cert.Thumbprint
+  Write-Host "Installed $storeRoot\$certId to $storeRoot "
   Move-Item -path $storeMy\$certId -Destination $storeRoot
 }
 
-#$certId = $cert.Thumbprint
-#Move-Item -path $storeMy\$certId -Destination $storeRoot
-#
-#
-#if (Test-Path -path Cert:\LocalMachine\Root\$certId)
-#{
-#  $cert = Get-Item -Path Cert:\LocalMachine\Root\$certId
-#  $store = Get-Item -Path Cert:\LocalMachine\Root
-#  $store.open("ReadWrite")
-#  $store.Remove($cert)
-#  $store.Close()
-#  $untrusted = Get-Item -Path Cert:\LocalMachine\Disallowed
-#  $untrusted.open("ReadWrite")
-#  $untrusted.add($cert)
-#  $untrusted.close()
-#}
-#Else
-#{
-#  write-host "$certId not found"
-#}
