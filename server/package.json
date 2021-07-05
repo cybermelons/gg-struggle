@@ -17,7 +17,6 @@
   "dependencies": {
     "log4js": "^6.3.0",
     "object-hash": "^2.2.0",
-    "openssl-nodejs": "^1.0.5",
     "smart-buffer": "^4.1.0",
     "sqlite3": "^5.0.2"
   }
