@@ -56,12 +56,6 @@ Filename: "{app}\openssl\openssl.exe"; Parameters: "x509 -inform der -in gg-stru
     Flags: runascurrentuser; \
     StatusMsg: "Converting self-signed certificate to .pem for gg-struggle to digest"; \
 
-Filename: "powershell.exe"; Parameters: "-ExecutionPolicy Bypass -File ""gencert.ps1"" ""{app}"" "; \
-    WorkingDir: {app}; \
-    Flags: runascurrentuser; \
-    StatusMsg: "Generating a self-signed gg-struggle certificate..."; \
-    AfterInstall: PatchBothHosts;
-
 ; run gg-struggle.exe after installation
 Filename: {app}\gg-struggle.exe; Description: {cm:LaunchProgram,{cm:AppName}}; Flags: nowait postinstall skipifsilent
 
@@ -70,13 +64,13 @@ AppName=gg-struggle
 LaunchProgram=Start gg-struggle after finishing installation
 
 [Code]
-
 // Thanks to
 // https://github.com/cryptomator/cryptomator-win/blob/0d4eb079b988da00b1b36873c8b11da8fe842d4e/resources/innosetup/setup.iss#L178
-procedure PatchHostsFile(statement: String);
+procedure PatchHostsFile(statements: TStringList);
 var
   contents: TStringList;
-  filename: String;
+  filename, statement: String;
+  i: Integer;
 begin
   filename := ExpandConstant('{sys}\drivers\etc\hosts');
   Log('Reading ' + filename);
@@ -84,6 +78,9 @@ begin
   if(FileExists(filename)) then begin
     contents.LoadFromFile(filename);
   end;
+  for i := 0 to statements.Count-1 do
+  begin
+  statement := statements[i];
   if(contents.IndexOf(statement) < 0) then begin
     Log('Adding line to hosts file: ' + statement);
     contents.Append(statement);
@@ -93,15 +90,15 @@ begin
       MsgBox('Unable to write to ' + filename + '.  To improve compatibility with Windows, we''d advise you to add this line manually:' + #13#10#13#10 + statement + #13#10#13#10 + 'Installation will continue after pressing OK.', mbInformation, MB_OK);
     end;
   end;
+  end;
 end;
 
 
-procedure UnPatchHostsFile(statement: String);
-
+procedure UnPatchHostsFile(statements: TStringList);
 var
   contents: TStringList;
-  filename: String;
-  tries: Integer;
+  filename, statement: String;
+  i: Integer;
 begin
   filename := ExpandConstant('{sys}\drivers\etc\hosts');
   Log('Reading ' + filename);
@@ -109,32 +106,41 @@ begin
   if(FileExists(filename)) then begin
     contents.LoadFromFile(filename);
   end;
+  for i := 0 to statements.Count-1 do
+  begin
+  statement := statements[i]
   if(contents.IndexOf(statement) >= 0) then begin
     Log('Removing line from hosts file: ' + statement);
     contents.Delete(contents.IndexOf(statement));
-
-    //tries := 0
-    //repeat
       try
         contents.SaveToFile(filename);
       except
         // sleep(100);
         MsgBox('Unable to write to ' + filename + '.  To improve compatibility with Windows, we''d advise you to remove this line manually:' + #13#10#13#10 + statement + #13#10#13#10 + 'Installation will continue after pressing OK.', mbInformation, MB_OK);
       end;
-    //until tries = 5;
+  end;
   end;
 end;
 
 procedure UnPatchBothHosts();
+var
+  hosts: TStringList;
 begin
-  UnPatchHostsFile('127.0.0.1 ggst-game.guiltygear.com');
+  hosts := TStringList.Create();
+  hosts.Add('127.0.0.1 ggst-game.guiltygear.com')
+  hosts.Add('3.112.119.46 ggst-game-real.guiltygear.com')
+  UnPatchHostsFile(hosts);
   UnPatchHostsFile('3.112.119.46 ggst-game-real.guiltygear.com');
 end;
 
 procedure PatchBothHosts();
+var
+  hosts: TStringList;
 begin
-  PatchHostsFile('127.0.0.1 ggst-game.guiltygear.com');
-  PatchHostsFile('3.112.119.46 ggst-game-real.guiltygear.com');
+  hosts := TStringList.Create();
+  hosts.Add('127.0.0.1 ggst-game.guiltygear.com')
+  hosts.Add('3.112.119.46 ggst-game-real.guiltygear.com')
+  PatchHostsFile( hosts );
 end;
 
 
