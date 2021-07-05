@@ -7,9 +7,9 @@ const ggstruggle = require('./gg-struggle')
 
 try {
   let options = {
-    certFile: './gg-struggle-cert.pem',
-    keyFile: './gg-struggle-key.pem',
-    //passphrase: 'totsugeki',  // unneeded for self-signed
+    certFile: './gg-struggle.pem',
+    keyFile: './gg-struggle.key',
+    passphrase: 'totsugeki',  // unneeded for self-signed
     port: 443,
 
     rootDir: process.env.TEMP + '/gg-struggle/',
