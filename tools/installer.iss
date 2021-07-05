@@ -44,17 +44,25 @@ Filename: "powershell.exe"; Parameters: "-ExecutionPolicy Bypass -File rmcert.ps
 ;    StatusMsg: "Installing gg-struggle certificate to Windows Root Certificate Store..."; \
 ;    AfterInstall: PatchBothHosts
 
+; generate certificate and keys
 Filename: "powershell.exe"; Parameters: "-ExecutionPolicy Bypass -File ""gencert.ps1"" ""{app}"" "; \
     WorkingDir: {app}; \
     Flags: runascurrentuser; \
     StatusMsg: "Generating a self-signed gg-struggle certificate..."; \
-    AfterInstall: PatchBothHosts
+    AfterInstall: PatchBothHosts;
 
-
+; convert from windows to universal pem files
 Filename: "{app}\openssl\openssl.exe"; Parameters: "x509 -inform der -in gg-struggle.cert -out gg-struggle.pem"; \
-    StatusMsg: "Converting self-signed certificate to .pem for gg-struggle to digest";
+    Flags: runascurrentuser; \
+    StatusMsg: "Converting self-signed certificate to .pem for gg-struggle to digest"; \
 
+Filename: "powershell.exe"; Parameters: "-ExecutionPolicy Bypass -File ""gencert.ps1"" ""{app}"" "; \
+    WorkingDir: {app}; \
+    Flags: runascurrentuser; \
+    StatusMsg: "Generating a self-signed gg-struggle certificate..."; \
+    AfterInstall: PatchBothHosts;
 
+; run gg-struggle.exe after installation
 Filename: {app}\gg-struggle.exe; Description: {cm:LaunchProgram,{cm:AppName}}; Flags: nowait postinstall skipifsilent
 
 [CustomMessages]
@@ -89,9 +97,11 @@ end;
 
 
 procedure UnPatchHostsFile(statement: String);
+
 var
   contents: TStringList;
   filename: String;
+  tries: Integer;
 begin
   filename := ExpandConstant('{sys}\drivers\etc\hosts');
   Log('Reading ' + filename);
@@ -102,11 +112,16 @@ begin
   if(contents.IndexOf(statement) >= 0) then begin
     Log('Removing line from hosts file: ' + statement);
     contents.Delete(contents.IndexOf(statement));
-    try
-      contents.SaveToFile(filename);
-    except
-      MsgBox('Unable to write to ' + filename + '.  To improve compatibility with Windows, we''d advise you to add this line manually:' + #13#10#13#10 + statement + #13#10#13#10 + 'Installation will continue after pressing OK.', mbInformation, MB_OK);
-    end;
+
+    //tries := 0
+    //repeat
+      try
+        contents.SaveToFile(filename);
+      except
+        // sleep(100);
+        MsgBox('Unable to write to ' + filename + '.  To improve compatibility with Windows, we''d advise you to remove this line manually:' + #13#10#13#10 + statement + #13#10#13#10 + 'Installation will continue after pressing OK.', mbInformation, MB_OK);
+      end;
+    //until tries = 5;
   end;
 end;
 
