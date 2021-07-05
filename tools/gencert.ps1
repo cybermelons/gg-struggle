@@ -74,8 +74,8 @@ openssl req `
   -nodes `
   -days 365 `
   -newkey rsa:2048 `
-  -keyout $keyDst `
-  -out $certDst `
+  -keyout "$keyDst" `
+  -out "$certDst" `
   -config localhost.cnf
 
 Import-Certificate -FilePath "$certDst" -CertStoreLocation "$storeRoot"

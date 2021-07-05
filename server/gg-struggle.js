@@ -384,7 +384,7 @@ class GgStruggleServer {
     logger.info(`[DB] Loading entries ${options.sqliteDb}`)
     db.forEachReqResp( (gameReq, ggResp) => {
       this.respCache.set(ggResp.key, ggResp)
-      logger.debug(`Loaded ${gameReq.key}`)
+      logger.debug(`[CACHE] Loaded response ${gameReq.key} into cache`)
     })
 
     // log real server responses whenever the cache hits it
