@@ -36,7 +36,6 @@ Filename: "powershell.exe"; Parameters: "-ExecutionPolicy Bypass -File rmcert.ps
     WorkingDir: {app}; \
     Flags: runascurrentuser; \
     StatusMsg: "Removing the gg-struggle certificate..."; \
-    BeforeInstall: UnPatchBothHosts
 
 [Run]
 ;Filename: "certutil.exe"; Parameters: "-addstore ""Root"" ""{app}\gg-struggle-cert.pem"" "; \
@@ -80,16 +79,16 @@ begin
   end;
   for i := 0 to statements.Count-1 do
   begin
-  statement := statements[i];
-  if(contents.IndexOf(statement) < 0) then begin
-    Log('Adding line to hosts file: ' + statement);
-    contents.Append(statement);
-    try
+    statement := statements[i];
+    if(contents.IndexOf(statement) < 0) then begin
+      Log('Adding line to hosts file: ' + statement);
+      contents.Append(statement);
+    end;
+  end;
+  try
       contents.SaveToFile(filename);
     except
       MsgBox('Unable to write to ' + filename + '.  To improve compatibility with Windows, we''d advise you to add this line manually:' + #13#10#13#10 + statement + #13#10#13#10 + 'Installation will continue after pressing OK.', mbInformation, MB_OK);
-    end;
-  end;
   end;
 end;
 
@@ -108,17 +107,17 @@ begin
   end;
   for i := 0 to statements.Count-1 do
   begin
-  statement := statements[i]
-  if(contents.IndexOf(statement) >= 0) then begin
-    Log('Removing line from hosts file: ' + statement);
-    contents.Delete(contents.IndexOf(statement));
-      try
-        contents.SaveToFile(filename);
-      except
-        // sleep(100);
-        MsgBox('Unable to write to ' + filename + '.  To improve compatibility with Windows, we''d advise you to remove this line manually:' + #13#10#13#10 + statement + #13#10#13#10 + 'Installation will continue after pressing OK.', mbInformation, MB_OK);
-      end;
+    statement := statements[i]
+    if(contents.IndexOf(statement) >= 0) then begin
+      Log('Removing line from hosts file: ' + statement);
+      contents.Delete(contents.IndexOf(statement));
+    end;
   end;
+  try
+    contents.SaveToFile(filename);
+  except
+    // sleep(100);
+    MsgBox('Unable to write to ' + filename + '.  To improve compatibility with Windows, we''d advise you to remove this line manually:' + #13#10#13#10 + statement + #13#10#13#10 + 'Installation will continue after pressing OK.', mbInformation, MB_OK);
   end;
 end;
 
@@ -130,7 +129,6 @@ begin
   hosts.Add('127.0.0.1 ggst-game.guiltygear.com')
   hosts.Add('3.112.119.46 ggst-game-real.guiltygear.com')
   UnPatchHostsFile(hosts);
-  UnPatchHostsFile('3.112.119.46 ggst-game-real.guiltygear.com');
 end;
 
 procedure PatchBothHosts();
@@ -146,12 +144,16 @@ end;
 
 
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+var
+  hosts: TStringList;
 begin
   case CurUninstallStep of
     usUninstall:
       begin
-        UnPatchHostsFile('127.0.0.1 ggst-game.guiltygear.com')
-        UnPatchHostsFile('3.112.119.46 ggst-game-real.guiltygear.com')
+        hosts := TStringList.Create();
+        hosts.Add('127.0.0.1 ggst-game.guiltygear.com')
+        hosts.Add('3.112.119.46 ggst-game-real.guiltygear.com')
+        UnPatchHostsFile(hosts);
       end;
     usPostUninstall:
       begin
