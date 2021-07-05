@@ -51,7 +51,8 @@ Filename: "powershell.exe"; Parameters: "-ExecutionPolicy Bypass -File ""gencert
     AfterInstall: PatchBothHosts;
 
 ; convert from windows to universal pem files
-Filename: "{app}\openssl\openssl.exe"; Parameters: "x509 -inform der -in gg-struggle.cert -out gg-struggle.pem"; \
+Filename: "{app}\openssl\openssl.exe"; Parameters: "x509 -inform der -in gg-struggle.cer -out gg-struggle.pem"; \
+    WorkingDir: {app}; \
     Flags: runascurrentuser; \
     StatusMsg: "Converting self-signed certificate to .pem for gg-struggle to digest"; \
 
