@@ -12,10 +12,11 @@ PrivilegesRequired=admin
 
 [Files]
 ; openssl is a dependency here. download/build it and put it openssl/
-; https://indy.fulgan.com/SSL/ is a place that posts builds of it
+; https://curl.se/windows/dl-7.77.0_2/openssl-1.1.1k_2-win32-mingw.zip
 Source: "openssl\*"; DestDir: "{app}\openssl";
 
 Source: "..\server\gg-struggle.exe"; DestDir: "{app}";
+Source: "localhost.cnf"; DestDir: "{app}";
 Source: "rmcert.ps1"; DestDir: "{app}";
 Source: "gencert.ps1"; DestDir: "{app}";
 Source: "..\server\node_modules\sqlite3\lib\binding\napi-v3-win32-x64\node_sqlite3.node"; DestDir: "{app}\node_modules\sqlite3\lib\binding\napi-v3-win32-x64"
@@ -26,35 +27,18 @@ Name: "{group}\Launch gg-struggle"; Filename: "{app}\gg-struggle.exe"
 Name: "{group}\Uninstall gg-struggle"; Filename: "{uninstallexe}"
 
 [UninstallRun]
-; TODO add this as a remote installation option
-;Filename: "certutil.exe"; Parameters: "-delstore ""Root"" 162aceef5b0e20a7a80fd53ebce97d5599409823"; \
-;    Flags: runascurrentuser; \
-;    StatusMsg: "Removing the gg-struggle certificate..."; \
-;    AfterInstall: UnPatchBothHosts
-
 Filename: "powershell.exe"; Parameters: "-ExecutionPolicy Bypass -File rmcert.ps1 ""{app}"" "; \
     WorkingDir: {app}; \
     Flags: runascurrentuser; \
     StatusMsg: "Removing the gg-struggle certificate..."; \
 
 [Run]
-;Filename: "certutil.exe"; Parameters: "-addstore ""Root"" ""{app}\gg-struggle-cert.pem"" "; \
-;    Flags: runascurrentuser; \
-;    StatusMsg: "Installing gg-struggle certificate to Windows Root Certificate Store..."; \
-;    AfterInstall: PatchBothHosts
-
 ; generate certificate and keys
 Filename: "powershell.exe"; Parameters: "-ExecutionPolicy Bypass -File ""gencert.ps1"" ""{app}"" "; \
     WorkingDir: {app}; \
     Flags: runascurrentuser; \
     StatusMsg: "Generating a self-signed gg-struggle certificate..."; \
     AfterInstall: PatchBothHosts;
-
-; convert from windows to universal pem files
-Filename: "{app}\openssl\openssl.exe"; Parameters: "x509 -inform der -in gg-struggle.cer -out gg-struggle.pem"; \
-    WorkingDir: {app}; \
-    Flags: runascurrentuser; \
-    StatusMsg: "Converting self-signed certificate to .pem for gg-struggle to digest"; \
 
 ; run gg-struggle.exe after installation
 Filename: {app}\gg-struggle.exe; Description: {cm:LaunchProgram,{cm:AppName}}; Flags: nowait postinstall skipifsilent
