@@ -1,9 +1,12 @@
 # gg-struggle
 
+![Demo Video](media/ggmain.webm)
+
 ## tl;dr
 
 `gg-struggle` is a program that reduces loading times by caching
-the Guilty Gear server responses.
+the Guilty Gear server responses. Instead of taking 500+ ms/request,
+this takes ~20ms/req.
 
 ### Usage
 
@@ -30,7 +33,6 @@ Install using the `install-gg-struggle.exe` installer.
 NOTE: While installed, `gg-struggle` MUST be running while the game is up.
 You must uninstall to revert things to normal.
 
-
 ### Manual Install
 
 1. Run `certmgr.exe` as admin
@@ -50,7 +52,7 @@ are done in order, waiting for one to complete before doing the next.
 
 Making this many requests isn't too bad, until you factor in latency.
 Each request has to go to Japan and back, ~250ms each way / ~500+ ms total.
-Multiply this by 100 requests and no wonder it can take it 5+ minutes.
+Multiply this by 100 requests and no wonder it can take it 5 minutes.
 
 A good explanation of this can be found on reddit: [here](https://www.reddit.com/r/Guiltygear/comments/oaqwo5/analysis_of_network_traffic_at_game_startup)
 
