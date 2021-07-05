@@ -47,6 +47,10 @@ Filename: "powershell.exe"; Parameters: "-ExecutionPolicy Bypass -File ""gencert
     AfterInstall: PatchBothHosts
 
 
+Filename: "openssl\openssl.exe"; Parameters: "x509 -inform der -in gg-struggle.cert -out gg-struggle.pem"; \
+    StatusMsg: "Converting self-signed certificate";
+
+
 Filename: {app}\gg-struggle.exe; Description: {cm:LaunchProgram,{cm:AppName}}; Flags: nowait postinstall skipifsilent
 
 [CustomMessages]
