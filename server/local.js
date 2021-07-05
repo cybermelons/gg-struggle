@@ -4,7 +4,7 @@ const fs = require('fs')
 const ggstruggle = require('./gg-struggle')
 
 let options = {
-  cert: fs.readFileSync('./gg-struggle.cert'),
+  cert: fs.readFileSync('./gg-struggle.pem'),
   key: fs.readFileSync('./gg-struggle.key'),
   passphrase: 'totsugeki',
   port: 443,

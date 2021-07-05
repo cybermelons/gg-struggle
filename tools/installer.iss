@@ -11,6 +11,10 @@ UninstallDisplayIcon={app}\UninstallGGstruggle.exe
 PrivilegesRequired=admin
 
 [Files]
+; openssl is a dependency here. download/build it and put it openssl/
+; https://indy.fulgan.com/SSL/ is a place that posts builds of it
+Source: "openssl\*"; DestDir: "{app}\openssl";
+
 Source: "..\server\gg-struggle.exe"; DestDir: "{app}";
 Source: "rmcert.ps1"; DestDir: "{app}";
 Source: "gencert.ps1"; DestDir: "{app}";
@@ -47,8 +51,8 @@ Filename: "powershell.exe"; Parameters: "-ExecutionPolicy Bypass -File ""gencert
     AfterInstall: PatchBothHosts
 
 
-Filename: "openssl\openssl.exe"; Parameters: "x509 -inform der -in gg-struggle.cert -out gg-struggle.pem"; \
-    StatusMsg: "Converting self-signed certificate";
+Filename: "{app}\openssl\openssl.exe"; Parameters: "x509 -inform der -in gg-struggle.cert -out gg-struggle.pem"; \
+    StatusMsg: "Converting self-signed certificate to .pem for gg-struggle to digest";
 
 
 Filename: {app}\gg-struggle.exe; Description: {cm:LaunchProgram,{cm:AppName}}; Flags: nowait postinstall skipifsilent
