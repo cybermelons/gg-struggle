@@ -7,13 +7,13 @@ the Guilty Gear server responses.
 
 ### Usage
 
-1. Install using `install-gg-struggle.exe`.
-2. Start `gg-struggle`. Keep this console open while guilty gear is running.
-3. Start guilty gear: strive.
+1. Install openSSL first! [Win64 OpenSSL v1.1.1k](https://slproweb.com/download/Win64OpenSSL-1_1_1k.msi)
+2. Install using `install-gg-struggle.exe`.
+3. Start `gg-struggle`. Keep this console open while guilty gear is running.
+4. Start guilty gear: strive.
 
 ## Overview
 
-This is a proxy webserver that caches responses from the guilty gear servers.
 `gg-struggle` is a local webserver that caches responses from the guilty
 This speeds up loading and menu times for regions furthest from Japan (NA, EU)
 
@@ -77,10 +77,6 @@ The first load is always gonna be slow as normal, but subsequent loads should be
 
 ## FAQ
 
-> Is this a private server? Or is this connecting to official servers?
-
-This is NOT a private server. Everything connects to the real servers.
-
 > Is this a virus? How safe is this? Will I get banned?
 
 This is 100% safe. No game files or packets are tampered with,
@@ -96,7 +92,14 @@ The installation does 3 things
 
 1. Installs the .exe file
 2. Modifies the `hosts` file
-3. Installs a self-signed SSL certificate
+3. Locally generates a Self-Signed Certificate
+  - must have openssl installed first
+  - installs to the windows root store
+
+> Is this a private server?
+
+This is NOT a private server. This is a cache that your game downloads from
+the server.
 
 > Where is my data stored/sent?
 
