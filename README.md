@@ -70,7 +70,7 @@ The next time the game tries to make the same request (e.g. download latest news
 `gg-struggle` will already have saved that data from earlier and return it back
 immediately.
 
-## Issues
+## Known Issues
 
 > slow first load
 
@@ -81,6 +81,13 @@ The first load is always gonna be slow as normal, but subsequent loads should be
 As of 1.3, any changes to player data won't show in the client for 24 hours.
 Future versions will dynamically cache data based on the request routes,
 so that trivial data like player lobbies are always up-to-date.
+
+This'll be fixed in the next patch.
+
+## Logs
+
+Windows: `%TEMP%/gg-struggle/all.log`
+linux: `$TMPDIR/gg-struggle/all.log`
 
 ## FAQ
 
