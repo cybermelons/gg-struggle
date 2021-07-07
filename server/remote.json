@@ -10,9 +10,9 @@
     "cachePolicy": {
       "default": "3 hours",
       "routes": {
-        "/api/lobby/.*": "1 hour",
-        "/api/catalog/.*": "1 hour",
-        "/api/sys/.*": "1 hour"
+        "/api/lobby/.*": "5 minutes",
+        "/api/catalog/.*": "5 minutes",
+        "/api/sys/.*": "5 minutes"
       }
     }
   }
