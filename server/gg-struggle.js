@@ -25,20 +25,26 @@ class CacheLayer extends EventEmitter {
       return this.cachePolicy.memoized[url]
     }
 
-    let expireTime = parseTime(this.cachePolicy.default)
+    let expDuration = parseTime(this.cachePolicy.default)
 
     let routes = this.cachePolicy.routes
-    for (const url in routes) {
-      const regex = new RegExp(key)
+    for (const regexStr in routes) {
+      const regex = new RegExp(regexStr)
       if (regex.test(url)) {
-        expireTime = parseTime(routes[url])
+        console.log(`Found regex for ${regexStr} ${url}`)
+        expDuration = parseTime(routes[regexStr])
+        if (expDuration === null) {
+          log4js.getLogger().error(`[CACHE] ${url} could not parse expire duration for regex: ${regexStr}`)
+        }
         break
       }
     }
 
-    this.cachePolicy.memoized[url] = expireTime
-    log4js.getLogger().debug(`[CACHE] ${url} given expire time of ${expDuration}`)
-    return expireTime
+    let expTimeMin = parseTime(expDuration, 'm')
+    this.cachePolicy.memoized[url] = expDuration
+    log4js.getLogger().debug(`[CACHE] ${url} expDuration ${expDuration}`)
+    log4js.getLogger().debug(`[CACHE] ${url} given expire time of ${expTimeMin} min`)
+    return expDuration
   }
 
   set = (key, ggResp) => {

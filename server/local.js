@@ -4,7 +4,6 @@ const fs = require('fs')
 const log4js = require('log4js')
 const nconf = require('nconf')
 const os = require('os')
-const parseTime = require('parse-duration')
 
 const ggstruggle = require('./gg-struggle')
 
@@ -33,6 +32,9 @@ try {
     // TODO set config default values in nconf
     options.rootDir = os.tmpdir() + '/gg-struggle'
   }
+
+  options.sqliteDb = options.rootDir + '/gg-struggle.db'
+  options.dumpDir = options.rootDir + '/dumps'
 
   log4js.configure( {
     appenders: {
