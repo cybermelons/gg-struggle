@@ -7,25 +7,16 @@ const os = require('os')
 
 const ggstruggle = require('./gg-struggle')
 
-
 try {
-  nconf.file(process.argv[2])
+  var cfg = './local.json'
+  if (process.argv.length < 3) {
+    console.error(`[PROXY] No config specified. Using default ${cfg}`)
+  }
+  else {
+    cfg = process.argv[2]
+  }
 
-  // let options = {
-  //   //certFile: './gg-struggle-cert.pem',
-  //   //keyFile: './gg-struggle-cert.key',
-  //   pfxFile: './gg-struggle-cert.pfx',
-  //   passphrase: 'totsugeki',
-  //   port: 443,
-
-  //   rootDir: process.env.TEMP + '/gg-struggle/',
-  //   dumpDir: process.env.TEMP + '/gg-struggle/dumps',
-  //   sqliteDb: process.env.TEMP + '/gg-struggle/gg-struggle.db',
-  //   ggHost: 'ggst-game-real.guiltygear.com'
-  //
-  // }
-  //
-
+  nconf.file(cfg)
   var options = nconf.get('options')
 
   if (options.rootDir === "__TEMP__") {
@@ -36,9 +27,10 @@ try {
   options.sqliteDb = options.rootDir + '/gg-struggle.db'
   options.dumpDir = options.rootDir + '/dumps'
 
+  options.logFile = `${options.rootDir}/all.log`
   log4js.configure( {
     appenders: {
-      everything: { type: 'file', filename: `${options.rootDir}/all.log`, },
+      everything: { type: 'file', filename: options.logFile, },
       out: { type: 'stdout' },
       //error: { type: 'file', filename: `${options.rootDir}/error.log`, },
       //info: { type: 'file', filename: `${options.rootDir}/info.log`, },
@@ -49,6 +41,8 @@ try {
       //info: { appenders: [ 'info', 'everything' ], level: 'info', },
     },
   })
+
+  log4js.getLogger().info(`[PROXY] Logging to ${options.logFile}`)
 
   let app = ggstruggle.createLocalServer(options)
   app.listen()
