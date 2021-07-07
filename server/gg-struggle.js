@@ -471,15 +471,21 @@ class GgStruggleServer {
 exports.createLocalServer = (options) => {
   // create a local server. if keyFile or certFile are defined
   // in options, read from those files instead of using raw plaintext keys
-  if (!('keyFile' in options)) {
+
+  if (('certFile' in options)) {
     options.key = fs.readFileSync(options.keyFile)
-  }
-  if (!('certFile' in options)) {
     options.cert = fs.readFileSync(options.certFile)
+  }
+  else if ('pfxFile' in options) {
+    options.pfx = fs.readFileSync(options.pfxFile)
+  }
+  else {
+    log4js.getLogger().error('No cert provided. ')
   }
 
   let ggServer = new GgStruggleServer(options)
   return ggServer
+
 }
 
 

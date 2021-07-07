@@ -3,13 +3,15 @@
 const fs = require('fs')
 const log4js = require('log4js')
 const ggstruggle = require('./gg-struggle')
+//const tls = require('tls')
 
 
 try {
   let options = {
-    certFile: './gg-struggle.pem',
-    keyFile: './gg-struggle.key',
-    passphrase: 'totsugeki',  // unneeded for self-signed
+    //certFile: './gg-struggle-cert.pem',
+    //keyFile: './gg-struggle-cert.key',
+    pfxFile: './gg-struggle-cert.pfx',
+    passphrase: 'totsugeki',
     port: 443,
 
     rootDir: process.env.TEMP + '/gg-struggle/',
@@ -34,7 +36,9 @@ try {
 
   let app = ggstruggle.createLocalServer(options)
   app.listen()
+
 } catch (err) {
+
   console.error(`[PROXY] Caught error at top-level: ${err}`)
   console.error(`Aborting...`)
 
