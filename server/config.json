@@ -1,12 +1,12 @@
 {
   "options": {
-    "pfxFile": "./gg-struggle-cert.pfx",
+    "pfxFile": "./test-gg-cert.pfx",
     "passphrase": "totsugeki",
     "port": 443,
     "rootDir": "/tmp/gg-struggle/",
     "dumpDir": "/tmp/gg-struggle/dumps",
     "sqliteDb": "/tmp/gg-struggle/gg-struggle.db",
-    "ggHost": "ggst-game-real.guiltygear.com",
+    "ggHost": "ggst-game.guiltygear.com",
     "cachePolicy": {
       "default": "1 day",
       "routes": {

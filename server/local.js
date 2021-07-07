@@ -9,7 +9,7 @@ const ggstruggle = require('./gg-struggle')
 
 
 try {
-  nconf.file(name, { file: 'config.json' });
+  nconf.file('config.json');
 
   // let options = {
   //   //certFile: './gg-struggle-cert.pem',
@@ -27,6 +27,7 @@ try {
   //
   //
 
+  let options = nconf.get('options')
   log4js.configure( {
     appenders: {
       everything: { type: 'file', filename: `${options.rootDir}/all.log`, },
