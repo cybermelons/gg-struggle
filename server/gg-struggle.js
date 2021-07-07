@@ -473,14 +473,17 @@ exports.createLocalServer = (options) => {
   // in options, read from those files instead of using raw plaintext keys
 
   if (('certFile' in options)) {
+    log4js.getLogger().info('[PROXY] No cert provided. ')
+    log4js.getLogger().info(`[PROXY] Using cert and key files: ${options.certFile}, ${options.keyFile}`)
     options.key = fs.readFileSync(options.keyFile)
     options.cert = fs.readFileSync(options.certFile)
   }
   else if ('pfxFile' in options) {
+    log4js.getLogger().info(`[PROXY] Using pfx file ${options.pfxFile}`)
     options.pfx = fs.readFileSync(options.pfxFile)
   }
   else {
-    log4js.getLogger().error('No cert provided. ')
+    log4js.getLogger().error('[PROXY] No cert provided. ')
   }
 
   let ggServer = new GgStruggleServer(options)

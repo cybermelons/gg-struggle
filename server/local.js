@@ -3,8 +3,6 @@
 const fs = require('fs')
 const log4js = require('log4js')
 const ggstruggle = require('./gg-struggle')
-//const tls = require('tls')
-
 
 try {
   let options = {

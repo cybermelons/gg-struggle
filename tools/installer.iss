@@ -3,7 +3,7 @@
 
 [Setup]
 AppName=gg-struggle
-AppVersion=1.0
+AppVersion=1.3
 WizardStyle=modern
 DefaultDirName={autopf}\gg-struggle
 DefaultGroupName=gg-struggle
@@ -11,10 +11,6 @@ UninstallDisplayIcon={app}\UninstallGGstruggle.exe
 PrivilegesRequired=admin
 
 [Files]
-; openssl is a dependency here. download/build it and put it openssl/
-; https://curl.se/windows/dl-7.77.0_2/openssl-1.1.1k_2-win32-mingw.zip
-Source: "openssl\*"; DestDir: "{app}\openssl";
-
 Source: "..\server\gg-struggle.exe"; DestDir: "{app}";
 Source: "localhost.cnf"; DestDir: "{app}";
 Source: "rmcert.ps1"; DestDir: "{app}";
