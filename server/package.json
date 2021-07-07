@@ -4,7 +4,7 @@
   "description": "guilty gear strive server emulator",
   "main": "local.js",
   "bin": {
-    "gg-struggle": "./local.js"
+    "gg-struggle": "./entry.js"
   },
   "assets": [
     "node_modules/sqlite3/lib/binding/napi-v3-win32-x64/node_sqlite3.node"
