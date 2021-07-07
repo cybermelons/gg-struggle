@@ -2,21 +2,30 @@
 
 const fs = require('fs')
 const log4js = require('log4js')
+const nconf = require('nconf')
+var parseTime = require('parse-duration')
+
 const ggstruggle = require('./gg-struggle')
 
-try {
-  let options = {
-    //certFile: './gg-struggle-cert.pem',
-    //keyFile: './gg-struggle-cert.key',
-    pfxFile: './gg-struggle-cert.pfx',
-    passphrase: 'totsugeki',
-    port: 443,
 
-    rootDir: process.env.TEMP + '/gg-struggle/',
-    dumpDir: process.env.TEMP + '/gg-struggle/dumps',
-    sqliteDb: process.env.TEMP + '/gg-struggle/gg-struggle.db',
-    ggHost: 'ggst-game-real.guiltygear.com'
-  }
+try {
+  nconf.file(name, { file: 'config.json' });
+
+  // let options = {
+  //   //certFile: './gg-struggle-cert.pem',
+  //   //keyFile: './gg-struggle-cert.key',
+  //   pfxFile: './gg-struggle-cert.pfx',
+  //   passphrase: 'totsugeki',
+  //   port: 443,
+
+  //   rootDir: process.env.TEMP + '/gg-struggle/',
+  //   dumpDir: process.env.TEMP + '/gg-struggle/dumps',
+  //   sqliteDb: process.env.TEMP + '/gg-struggle/gg-struggle.db',
+  //   ggHost: 'ggst-game-real.guiltygear.com'
+  //
+  // }
+  //
+  //
 
   log4js.configure( {
     appenders: {
@@ -32,7 +41,7 @@ try {
     },
   })
 
-  let app = ggstruggle.createLocalServer(options)
+  let app = ggstruggle.createLocalServer(nconf.get('options'))
   app.listen()
 
 } catch (err) {

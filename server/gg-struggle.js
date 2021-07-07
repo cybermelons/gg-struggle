@@ -7,16 +7,24 @@ const EventEmitter = require('events')
 const SmartBuffer = require('smart-buffer').SmartBuffer;
 const log4js = require('log4js')
 
-const EXPIRE_TIME_MS = 1000 * 60 * 60 * 60 * 24 // max cache-age: 1 day
-
 class CacheLayer extends EventEmitter {
-  constructor(props) {
-    super(props)
+  constructor(options) {
+    super(options)
     // 3 layers of storage
     this.cache = new Map() // 1. in-memory
                            // 2. persistent
                            // 3. fetch data
-    this.ggHost = props.ggHost
+    this.cachePolicy = options.cachePolicy
+    this.ggHost = options.ggHost
+  }
+
+  getCacheExpireTime = (url) => {
+    let routes = this.cachePolicy.routes
+    if (url in routes) {
+      return parseTime(routes[url])
+    }
+
+    return parseTime(this.cachePolicy.default)
   }
 
   set = (key, ggResp) => {
@@ -40,7 +48,7 @@ class CacheLayer extends EventEmitter {
       callback(ggResp)
 
       // only refresh items if expired
-      if (Date.now() > ggResp.timeStart + EXPIRE_TIME_MS) {
+      if (Date.now() > ggResp.timeStart + this.getCacheExpireTime(gameReq.url)) {
         log4js.getLogger().info(`[CACHE] Refreshing key because expired: ${gameReq.key}`)
         this.fetchGg(gameReq, (data) => {
           this.emit('fetch', data)
@@ -178,6 +186,7 @@ class DbLayer {
   }
 
   forEachReqResp = (callback) => {
+    // sql statement to get (req, resp)
     const stmt = `
       SELECT
         req.dumpkey as dumpKey,
@@ -196,7 +205,7 @@ class DbLayer {
       LEFT JOIN responses AS resp USING (dumpKey)
     `
 
-    this.db.all( stmt, [], (err, rows) => {
+    this.db.all(stmt, [], (err, rows) => {
       if (err) {
         const logger = log4js.getLogger()
         logger.warn(`[DB] Error reading ${key} from db: ${err}`)
@@ -385,6 +394,8 @@ class GgStruggleServer {
     db.forEachReqResp( (gameReq, ggResp) => {
       this.respCache.set(ggResp.key, ggResp)
       logger.debug(`[CACHE] Loaded response ${gameReq.key} into cache`)
+
+      // print debug stuff
     })
 
     // log real server responses whenever the cache hits it
