@@ -4,16 +4,17 @@
 
 ## tl;dr
 
+🆕 Now with locally generated certs! 🔐
+
 `gg-struggle` is a program that reduces loading times by caching
 the Guilty Gear server responses. Instead of taking 500+ ms/request,
 this takes ~20ms/req.
 
 ### Usage
 
-1. Install openSSL first! [Win64 OpenSSL v1.1.1k](https://slproweb.com/download/Win64OpenSSL-1_1_1k.msi)
-2. Install using `install-gg-struggle.exe`.
-3. Start `gg-struggle`. Keep this console open while guilty gear is running.
-4. Start guilty gear: strive.
+1. Install using `install-gg-struggle.exe`.
+2. Start `gg-struggle`. Keep this console open while guilty gear is running.
+3. SLASH!
 
 ## Overview
 
@@ -71,11 +72,15 @@ immediately.
 
 ## Issues
 
-Since we send cached data back to the game, the game may be displaying out-of-date information,
-e.g. ranking. Data is cached for a day (at-most) while the program is running.
-This doesn't affect gameplay.
+> slow first load
 
 The first load is always gonna be slow as normal, but subsequent loads should be faster.
+
+> Floor lockout / old data
+
+As of 1.3, any changes to player data won't show in the client for 24 hours.
+Future versions will dynamically cache data based on the request routes,
+so that trivial data like player lobbies are always up-to-date.
 
 ## FAQ
 
@@ -95,8 +100,8 @@ The installation does 3 things
 1. Installs the .exe file
 2. Modifies the `hosts` file
 3. Locally generates a Self-Signed Certificate
-  - must have openssl installed first
   - installs to the windows root store
+  - copy stored at `%ProgramFiles%/gg-struggle`
 
 > Is this a private server?
 
