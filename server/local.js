@@ -3,13 +3,15 @@
 const fs = require('fs')
 const log4js = require('log4js')
 const nconf = require('nconf')
-var parseTime = require('parse-duration')
+const os = require('os')
+const parseTime = require('parse-duration')
 
 const ggstruggle = require('./gg-struggle')
 
 
 try {
-  nconf.file('config.json');
+  console.log(process.argv[2])
+  nconf.file(process.argv[2])
 
   // let options = {
   //   //certFile: './gg-struggle-cert.pem',
@@ -25,9 +27,15 @@ try {
   //
   // }
   //
-  //
 
-  let options = nconf.get('options')
+  var options = nconf.get('options')
+
+  console.log(options)
+  if (options.rootDir == "__TEMP__") {
+    // TODO set config default values in nconf
+    options.rootDir == os.tmpdir()
+  }
+
   log4js.configure( {
     appenders: {
       everything: { type: 'file', filename: `${options.rootDir}/all.log`, },
@@ -36,7 +44,7 @@ try {
       //info: { type: 'file', filename: `${options.rootDir}/info.log`, },
     },
     categories: {
-      default: { appenders: [ 'everything', 'out' ], level: 'info', },
+      default: { appenders: [ 'everything', 'out' ], level: options.logLevel },
       //error: { appenders: [ 'error', 'everything' ], level: 'error', },
       //info: { appenders: [ 'info', 'everything' ], level: 'info', },
     },
