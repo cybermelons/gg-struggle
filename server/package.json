@@ -16,7 +16,9 @@
   "license": "ISC",
   "dependencies": {
     "log4js": "^6.3.0",
+    "nconf": "^0.11.3",
     "object-hash": "^2.2.0",
+    "parse-duration": "^1.0.0",
     "smart-buffer": "^4.1.0",
     "sqlite3": "^5.0.2"
   }

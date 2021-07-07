@@ -10,7 +10,6 @@ const ggstruggle = require('./gg-struggle')
 
 
 try {
-  console.log(process.argv[2])
   nconf.file(process.argv[2])
 
   // let options = {
@@ -30,10 +29,9 @@ try {
 
   var options = nconf.get('options')
 
-  console.log(options)
-  if (options.rootDir == "__TEMP__") {
+  if (options.rootDir === "__TEMP__") {
     // TODO set config default values in nconf
-    options.rootDir == os.tmpdir()
+    options.rootDir = os.tmpdir() + '/gg-struggle'
   }
 
   log4js.configure( {
@@ -50,7 +48,7 @@ try {
     },
   })
 
-  let app = ggstruggle.createLocalServer(nconf.get('options'))
+  let app = ggstruggle.createLocalServer(options)
   app.listen()
 
 } catch (err) {
