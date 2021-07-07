@@ -19,12 +19,24 @@ class CacheLayer extends EventEmitter {
   }
 
   getCacheExpireTime = (url) => {
-    let routes = this.cachePolicy.routes
-    if (url in routes) {
-      return parseTime(routes[url])
+    if (url in this.cachePolicy.memoized) {
+      return this.cachePolicy.memoized[url]
     }
 
-    return parseTime(this.cachePolicy.default)
+    let expireTime = parseTime(this.cachePolicy.default)
+
+    let routes = this.cachePolicy.routes
+    for (const url in routes) {
+      const regex = new RegExp(key)
+      if (regex.test(url)) {
+        expireTime = parseTime(routes[url])
+        break
+      }
+    }
+
+    this.cachePolicy.memoized[url] = expireTime
+    log4js.getLogger().debug(`[CACHE] ${url} given expire time of ${expDuration}`)
+    return expireTime
   }
 
   set = (key, ggResp) => {
