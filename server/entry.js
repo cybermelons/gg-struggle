@@ -57,8 +57,6 @@ try {
 
   console.error(`[PROXY] Caught error at top-level: ${err}`)
   console.error(`Aborting...`)
-
-  const logger = log4js.getLogger()
-  logger.error(err)
+  log4js.getLogger().error(err)
   process.exit()
 }
