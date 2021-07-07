@@ -2,7 +2,7 @@
   "name": "gg-struggle",
   "version": "1.0.0",
   "description": "guilty gear strive server emulator",
-  "main": "local.js",
+  "main": "entry.js",
   "bin": {
     "gg-struggle": "./entry.js"
   },
