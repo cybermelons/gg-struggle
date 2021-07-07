@@ -3,7 +3,7 @@
 
 [Setup]
 AppName=gg-struggle
-AppVersion=1.3
+AppVersion=1.4
 WizardStyle=modern
 DefaultDirName={autopf}\gg-struggle
 DefaultGroupName=gg-struggle

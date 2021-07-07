@@ -1,0 +1,45 @@
+# Changelog
+
+
+## [Unreleased]
+
+### Added
+
+- Web Interface
+- Stat Tracking
+- Payload parsers
+
+### Fixed
+
+- logging top level errors. pausing before quitting
+
+## [1.4.0] - 2021-07-08
+
+### Added
+
+- Ability to specify your options in a `config.json`
+- Simple static caching policies. Specify different expiry times per API call
+
+## [1.3.0] - 2021-07-05
+
+### Added
+
+- Ability to specify your options in a `config.json`
+- Simple static caching policies. Specify how long to cache API routes
+
+### Changed
+
+- Use a locally generated cert/key combo on Windows, instead of a hardcoded
+one
+
+## [1.1.0] - 2021-07-05
+
+### Added
+
+- logging to a file via log4js
+- Automatic load of cache data on startup
+
+### Fixed
+
+- Local installation
+
