@@ -1,11 +1,12 @@
-const http = require('http')
-const https = require('https')
-const hash = require('object-hash')
-const fs = require('fs')
-const sqlite3 = require('sqlite3')
 const EventEmitter = require('events')
 const SmartBuffer = require('smart-buffer').SmartBuffer;
+const fs = require('fs')
+const hash = require('object-hash')
+const http = require('http')
+const https = require('https')
 const log4js = require('log4js')
+const parseTime = require('parse-duration')
+const sqlite3 = require('sqlite3')
 
 class CacheLayer extends EventEmitter {
   constructor(options) {
@@ -15,6 +16,7 @@ class CacheLayer extends EventEmitter {
                            // 2. persistent
                            // 3. fetch data
     this.cachePolicy = options.cachePolicy
+    this.cachePolicy.memoized = new Map()
     this.ggHost = options.ggHost
   }
 
