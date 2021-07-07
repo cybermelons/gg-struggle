@@ -4,16 +4,32 @@
 
 ## tl;dr
 
+🆕 Now with locally generated certs! 🔐
+
 `gg-struggle` is a program that reduces loading times by caching
 the Guilty Gear server responses. Instead of taking 500+ ms/request,
 this takes ~20ms/req.
 
 ### Usage
 
-1. Install using `install-gg-struggle.exe`. **[Download here](https://git.yeet.st/attachments/141bca1c-fc95-43fb-9209-8cb29e45c5a9)**
+1. Install using `install-gg-struggle.exe`.
 2. Start `gg-struggle`. Keep this console open while guilty gear is running.
-    - if it does not start, create the directory `%TEMP%/gg-struggle/dumps`.
-3. Start guilty gear: strive.
+3. SLASH!
+
+## Overview
+
+`gg-struggle` is a local webserver that caches responses from the guilty
+This speeds up loading and menu times for regions furthest from Japan (NA, EU)
+
+I'll update this with more documentation as I have time
+
+### Automated Install
+
+Install using the `install-gg-struggle.exe` installer.
+
+1. run `install-gg-struggle.exe`
+2. Launch `gg-struggle.exe` through the start menu
+3. Load game
 
 NOTE: While installed, `gg-struggle` MUST be running while the game is up.
 You must uninstall to revert things to normal.
@@ -56,17 +72,17 @@ immediately.
 
 ## Issues
 
-Since we send cached data back to the game, the game may be displaying out-of-date information,
-e.g. ranking. Data is cached for a day (at-most) while the program is running.
-This doesn't affect gameplay.
+> slow first load
 
 The first load is always gonna be slow as normal, but subsequent loads should be faster.
 
+> Floor lockout / old data
+
+As of 1.3, any changes to player data won't show in the client for 24 hours.
+Future versions will dynamically cache data based on the request routes,
+so that trivial data like player lobbies are always up-to-date.
+
 ## FAQ
-
-> Is this a private server? Or is this connecting to official servers?
-
-This is NOT a private server. Everything connects to the real servers.
 
 > Is this a virus? How safe is this? Will I get banned?
 
@@ -83,7 +99,14 @@ The installation does 3 things
 
 1. Installs the .exe file
 2. Modifies the `hosts` file
-3. Installs a self-signed SSL certificate
+3. Locally generates a Self-Signed Certificate
+  - installs to the windows root store
+  - copy stored at `%ProgramFiles%/gg-struggle`
+
+> Is this a private server?
+
+This is NOT a private server. This is a cache that your game downloads from
+the server.
 
 > Where is my data stored/sent?
 

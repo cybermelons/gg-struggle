@@ -114,8 +114,8 @@ class CacheLayer extends EventEmitter {
       })
 
       ggResp.on('error', e => {
-        log4js.getLogger().error(`[CACHE] Error in response from gg servers: ${e}`)
-        log4js.getLogger().error(`[CACHE] Bailed on caching response from GG`)
+        log4js.getLogger().warn(`[CACHE] Error in response from gg servers: ${e}`)
+        log4js.getLogger().warn(`[CACHE] Bailed on caching response from GG`)
         this.cache.remove(key)
         console.timeEnd(`gg-req ${key}`)
       })
@@ -199,7 +199,7 @@ class DbLayer {
     this.db.all( stmt, [], (err, rows) => {
       if (err) {
         const logger = log4js.getLogger()
-        logger.error(`[DB] Error reading ${key} from db: ${err}`)
+        logger.warn(`[DB] Error reading ${key} from db: ${err}`)
         return
       }
 
@@ -237,7 +237,7 @@ class DbLayer {
 
           callback(gameReq, ggResp)
         } catch (err) {
-          log4js.getLogger().error(`[DB] Error reading request ${key}: ${err}`)
+          log4js.getLogger().warn(`[DB] Error reading request ${key}: ${err}`)
         }
       })
     })
@@ -246,7 +246,7 @@ class DbLayer {
   _readRequestDb = (key) => {
 
     stmt.on('error', (err) => {
-      log4js.getLogger().error(`_writeRequestDb: Error writing request to db: ${err}`)
+      log4js.getLogger().warn(`_writeRequestDb: Error writing request to db: ${err}`)
     })
 
     stmt.run(req.key, JSON.stringify(req.headers),
@@ -273,7 +273,7 @@ class DbLayer {
     ;`);
 
     stmt.on('error', (err) => {
-      log4js.getLogger().error(`_writeRequestDb: Error writing request to db: ${err}`)
+      log4js.getLogger().warn(`_writeRequestDb: Error writing request to db: ${err}`)
     })
 
     stmt.run(req.key, JSON.stringify(req.headers),
@@ -289,7 +289,7 @@ class DbLayer {
       WHERE (dumpKey == ? AND timeStart == ?)
     ;`)
     stmt.on('error', (err) => {
-      log4js.getLogger().error(`updateRequestTime: Error writing request to db: ${err}`)
+      log4js.getLogger().warn(`updateRequestTime: Error writing request to db: ${err}`)
     })
     stmt.run(Date.now(), gameReq.key, gameReq.timeStart)
   }
@@ -312,7 +312,7 @@ class DbLayer {
     var stmt = this.db.prepare(`INSERT INTO responses VALUES (?, ?, ?, ?, ?, ?, ?, ?) ;`)
 
     stmt.on('error', (err) => {
-      log4js.getLogger().error(`_writeResponseDb: Error writing request to db: ${err}`)
+      log4js.getLogger().warn(`_writeResponseDb: Error writing request to db: ${err}`)
     })
     stmt.run(resp.key, JSON.stringify(resp.headers),
       resp.method, resp.url,
@@ -327,7 +327,7 @@ function getDb(dbFile, dumpDir) {
   if (! (DB) ) {
     var sqldb = new sqlite3.Database(dbFile, (err) => {
       if (err) {
-        log4js.getLogger().error(`[DB] Error connecting to db ${dbFile}: ${err}`)
+        log4js.getLogger().warn(`[DB] Error connecting to db ${dbFile}: ${err}`)
       }
       else {
         log4js.getLogger().log(`[DB] Connected to db ${dbFile}`)
@@ -374,20 +374,6 @@ class GgStruggleServer {
   constructor(options) {
     this.options = options
 
-    log4js.configure( {
-      appenders: {
-        everything: { type: 'file', filename: `${options.rootDir}/all.log`, },
-        out: { type: 'stdout' },
-        //error: { type: 'file', filename: `${options.rootDir}/error.log`, },
-        //info: { type: 'file', filename: `${options.rootDir}/info.log`, },
-      },
-      categories: {
-        default: { appenders: [ 'everything', 'out' ], level: 'info', },
-        //error: { appenders: [ 'error', 'everything' ], level: 'error', },
-        //info: { appenders: [ 'info', 'everything' ], level: 'info', },
-      },
-    })
-
     const logger = log4js.getLogger()
 
     // set up cache and database
@@ -398,7 +384,7 @@ class GgStruggleServer {
     logger.info(`[DB] Loading entries ${options.sqliteDb}`)
     db.forEachReqResp( (gameReq, ggResp) => {
       this.respCache.set(ggResp.key, ggResp)
-      logger.debug(`Loaded ${gameReq.key}`)
+      logger.debug(`[CACHE] Loaded response ${gameReq.key} into cache`)
     })
 
     // log real server responses whenever the cache hits it
@@ -483,8 +469,26 @@ class GgStruggleServer {
 
 
 exports.createLocalServer = (options) => {
+  // create a local server. if keyFile or certFile are defined
+  // in options, read from those files instead of using raw plaintext keys
+
+  if (('certFile' in options)) {
+    log4js.getLogger().info('[PROXY] No cert provided. ')
+    log4js.getLogger().info(`[PROXY] Using cert and key files: ${options.certFile}, ${options.keyFile}`)
+    options.key = fs.readFileSync(options.keyFile)
+    options.cert = fs.readFileSync(options.certFile)
+  }
+  else if ('pfxFile' in options) {
+    log4js.getLogger().info(`[PROXY] Using pfx file ${options.pfxFile}`)
+    options.pfx = fs.readFileSync(options.pfxFile)
+  }
+  else {
+    log4js.getLogger().error('[PROXY] No cert provided. ')
+  }
+
   let ggServer = new GgStruggleServer(options)
   return ggServer
+
 }
 
 
