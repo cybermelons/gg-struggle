@@ -3,15 +3,22 @@
 
 ## [Unreleased]
 
-### Added
+### Planned
 
 - Web Interface
 - Stat Tracking
 - Payload parsers
 
-### Fixed
+### Needs Fixing
 
 - logging top level errors. pausing before quitting
+
+## [1.4.1] - 2021-07-08
+
+### Fixed
+
+- Installer did not include new configuration
+- Guarantee binaries update on re-install
 
 ## [1.4.0] - 2021-07-08
 

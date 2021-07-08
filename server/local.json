@@ -1,6 +1,6 @@
 {
   "options": {
-    "pfxFile": "./gg-struggle.pfx",
+    "pfxFile": "./gg-struggle-cert.pfx",
     "passphrase": "totsugeki",
     "port": 443,
 
@@ -14,6 +14,5 @@
         "/api/catalog/.*": "5 minutes",
         "/api/sys/.*": "5 minutes"
       }
-    }
-  }
+    } }
 }
