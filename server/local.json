@@ -1,0 +1,19 @@
+{
+  "options": {
+    "pfxFile": "./gg-struggle.pfx",
+    "passphrase": "totsugeki",
+    "port": 443,
+
+    "logLevel": "info",
+    "rootDir": "__TEMP__",
+    "ggHost": "ggst-game-real.guiltygear.com",
+    "cachePolicy": {
+      "default": "3 hours",
+      "routes": {
+        "/api/lobby/.*": "5 minutes",
+        "/api/catalog/.*": "5 minutes",
+        "/api/sys/.*": "5 minutes"
+      }
+    }
+  }
+}

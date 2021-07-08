@@ -1,22 +1,50 @@
-const http = require('http')
-const https = require('https')
-const hash = require('object-hash')
-const fs = require('fs')
-const sqlite3 = require('sqlite3')
 const EventEmitter = require('events')
 const SmartBuffer = require('smart-buffer').SmartBuffer;
+const fs = require('fs')
+const hash = require('object-hash')
+const http = require('http')
+const https = require('https')
 const log4js = require('log4js')
-
-const EXPIRE_TIME_MS = 1000 * 60 * 60 * 60 * 24 // max cache-age: 1 day
+const parseTime = require('parse-duration')
+const sqlite3 = require('sqlite3')
 
 class CacheLayer extends EventEmitter {
-  constructor(props) {
-    super(props)
+  constructor(options) {
+    super(options)
     // 3 layers of storage
     this.cache = new Map() // 1. in-memory
                            // 2. persistent
                            // 3. fetch data
-    this.ggHost = props.ggHost
+    this.cachePolicy = options.cachePolicy
+    this.cachePolicy.memoized = new Map()
+    this.ggHost = options.ggHost
+  }
+
+  getCacheExpireTime = (url) => {
+    if (url in this.cachePolicy.memoized) {
+      return this.cachePolicy.memoized[url]
+    }
+
+    let expDuration = parseTime(this.cachePolicy.default)
+
+    let routes = this.cachePolicy.routes
+    for (const regexStr in routes) {
+      const regex = new RegExp(regexStr)
+      if (regex.test(url)) {
+        console.log(`Found regex for ${regexStr} ${url}`)
+        expDuration = parseTime(routes[regexStr])
+        if (expDuration === null) {
+          log4js.getLogger().error(`[CACHE] ${url} could not parse expire duration for regex: ${regexStr}`)
+        }
+        break
+      }
+    }
+
+    let expTimeMin = parseTime(expDuration, 'm')
+    this.cachePolicy.memoized[url] = expDuration
+    log4js.getLogger().debug(`[CACHE] ${url} expDuration ${expDuration}`)
+    log4js.getLogger().debug(`[CACHE] ${url} given expire time of ${expTimeMin} min`)
+    return expDuration
   }
 
   set = (key, ggResp) => {
@@ -40,7 +68,8 @@ class CacheLayer extends EventEmitter {
       callback(ggResp)
 
       // only refresh items if expired
-      if (Date.now() > ggResp.timeStart + EXPIRE_TIME_MS) {
+      let expireTime = ggResp.timeStart + this.getCacheExpireTime(gameReq.url)
+      if (Date.now() > expireTime) {
         log4js.getLogger().info(`[CACHE] Refreshing key because expired: ${gameReq.key}`)
         this.fetchGg(gameReq, (data) => {
           this.emit('fetch', data)
@@ -178,6 +207,7 @@ class DbLayer {
   }
 
   forEachReqResp = (callback) => {
+    // sql statement to get (req, resp)
     const stmt = `
       SELECT
         req.dumpkey as dumpKey,
@@ -196,7 +226,7 @@ class DbLayer {
       LEFT JOIN responses AS resp USING (dumpKey)
     `
 
-    this.db.all( stmt, [], (err, rows) => {
+    this.db.all(stmt, [], (err, rows) => {
       if (err) {
         const logger = log4js.getLogger()
         logger.warn(`[DB] Error reading ${key} from db: ${err}`)
@@ -385,6 +415,8 @@ class GgStruggleServer {
     db.forEachReqResp( (gameReq, ggResp) => {
       this.respCache.set(ggResp.key, ggResp)
       logger.debug(`[CACHE] Loaded response ${gameReq.key} into cache`)
+
+      // print debug stuff
     })
 
     // log real server responses whenever the cache hits it
