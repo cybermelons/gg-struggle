@@ -11,10 +11,12 @@ UninstallDisplayIcon={app}\UninstallGGstruggle.exe
 PrivilegesRequired=admin
 
 [Files]
-Source: "..\server\gg-struggle.exe"; DestDir: "{app}";
-Source: "localhost.cnf"; DestDir: "{app}";
-Source: "rmcert.ps1"; DestDir: "{app}";
-Source: "gencert.ps1"; DestDir: "{app}";
+Source: "..\server\gg-struggle.exe"; DestDir: "{app}"; Flags: ignoreversion;
+Source: "..\server\local.json"; DestDir: "{app}"; Flags: ignoreversion;
+Source: "localhost.cnf"; DestDir: "{app}"; Flags: ignoreversion;
+Source: "rmcert.ps1"; DestDir: "{app}"; Flags: ignoreversion;
+Source: "gencert.ps1"; DestDir: "{app}"; Flags: ignoreversion;
+
 Source: "..\server\node_modules\sqlite3\lib\binding\napi-v3-win32-x64\node_sqlite3.node"; DestDir: "{app}\node_modules\sqlite3\lib\binding\napi-v3-win32-x64"
 Source: "..\README.md"; DestDir: "{app}";
 
