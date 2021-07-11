@@ -16,7 +16,7 @@ Download [here](https://github.com/tsaibermelon/gg-struggle/releases/download/v1
 
 1. Install using `install-gg-struggle.exe`.
 2. Start `gg-struggle`. Keep this console open while guilty gear is running.
-3. SLASH!
+3. _SLASH!_
 
 ## Overview
 
