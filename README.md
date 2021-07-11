@@ -10,6 +10,8 @@
 the Guilty Gear server responses. Instead of taking 500+ ms/request,
 this takes ~20ms/req.
 
+Download [here](https://github.com/tsaibermelon/gg-struggle/releases/download/v1.4.1/install-gg-struggle-v1.4.1.exe)
+
 ### Usage
 
 1. Install using `install-gg-struggle.exe`.
