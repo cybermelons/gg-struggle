@@ -10,9 +10,13 @@
     "cachePolicy": {
       "default": "3 hours",
       "routes": {
-        "/api/lobby/.*": "5 minutes",
-        "/api/catalog/.*": "5 minutes",
-        "/api/sys/.*": "5 minutes"
+        "/api/catalog/.*": "-1",
+        "/api/get_vip_status/.*": "3 hours",
+        "/api/lobby/.*": "-1",
+        "/api/player_match/.*": "-1",
+        "/api/statistics/.*": "3 hours",
+        "/api/sys/.*": "5 minutes",
+        "/api/tus/read": "-1"
       }
     } }
 }
