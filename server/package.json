@@ -12,10 +12,13 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "targets": ["win"],
+  "targets": [
+    "win"
+  ],
   "author": "cybermelon",
   "license": "ISC",
   "dependencies": {
+    "degit": "^2.8.4",
     "log4js": "^6.3.0",
     "nconf": "^0.11.3",
     "object-hash": "^2.2.0",
