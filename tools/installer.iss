@@ -135,7 +135,7 @@ begin
       begin
         hosts := TStringList.Create();
         hosts.Add('127.0.0.1 ggst-game.guiltygear.com')
-        hosts.Add('3.112.119.46 ggst-game-real.guiltygear.com')
+        hosts.Add('35.72.213.199 ggst-game-real.guiltygear.com')
         UnPatchHostsFile(hosts);
       end;
     usPostUninstall:
