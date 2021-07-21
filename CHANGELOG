@@ -21,6 +21,7 @@
 - [x] git based auto-update
 - [x] Package node in zip
 	- [x] node and non-node packages
+	- [ ] run from zip
 
 ### Removed
 
