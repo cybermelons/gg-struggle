@@ -5,13 +5,36 @@
 
 ### Planned
 
+- minimizing to systray
 - Web Interface
 - Stat Tracking
 - Payload parsers
 
-### Needs Fixing
+### To Fix
 
-- logging top level errors. pausing before quitting
+- load unexpired cache entries on startup
+
+## [1.5.0] 2021-07-20
+
+### Added
+
+- [x] git based auto-update
+- [x] Package node in zip
+	- [x] node and non-node packages
+
+### Removed
+
+- Inno Setup installation in favor of .zip files
+
+### Changed
+
+- Disable caching for specific requests
+- Caching returns
+
+### Fixed
+
+- Demote some error messages to warnings
+- Fixed hardcoded IP addresses causing network issues
 
 ## [1.4.1] - 2021-07-08
 
