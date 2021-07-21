@@ -21,8 +21,6 @@
 - [x] git based auto-update
 	- [ ] test autoupdate
 - [x] Package node in zip
-	- [x] node and non-node packages
-	- [ ] run from zip
 
 ### Removed
 
@@ -31,12 +29,13 @@
 ### Changed
 
 - Disable caching for specific requests
-- Caching returns
+- Requests from the game are unconditionally sent to real servers to ensure
+consistency
 
 ### Fixed
 
 - [ ] Demote some error messages to warnings
-- [ ] Fixed hardcoded IP addresses causing network issues
+- [x] Fixed hardcoded IP addresses causing network issues
 
 ## [1.4.1] - 2021-07-08
 
