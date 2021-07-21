@@ -1,14 +1,8 @@
 {
   "name": "gg-struggle",
-  "version": "1.0.0",
+  "version": "1.5.0",
   "description": "guilty gear strive server emulator",
-  "main": "entry.js",
-  "bin": {
-    "gg-struggle": "./entry.js"
-  },
-  "assets": [
-    "node_modules/sqlite3/lib/binding/napi-v3-win32-x64/node_sqlite3.node"
-  ],
+  "main": "server/entry.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

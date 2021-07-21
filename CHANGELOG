@@ -19,6 +19,7 @@
 ### Added
 
 - [x] git based auto-update
+	- [ ] test autoupdate
 - [x] Package node in zip
 	- [x] node and non-node packages
 	- [ ] run from zip
@@ -34,8 +35,8 @@
 
 ### Fixed
 
-- Demote some error messages to warnings
-- Fixed hardcoded IP addresses causing network issues
+- [ ] Demote some error messages to warnings
+- [ ] Fixed hardcoded IP addresses causing network issues
 
 ## [1.4.1] - 2021-07-08
 

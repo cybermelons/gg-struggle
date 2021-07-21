@@ -1,6 +1,6 @@
 {
   "options": {
-    "pfxFile": "./test-gg-cert.pfx",
+    "pfxFile": "server/test-gg-cert.pfx",
     "passphrase": "totsugeki",
     "port": 443,
 
