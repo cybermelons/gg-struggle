@@ -27,8 +27,8 @@
 
 ### Changed
 
-- [ ] Disable caching for specific requests
-- [ ] Requests from the game are unconditionally sent to real servers to ensure
+- [x] Bypass caching for specific requests
+- [x] Requests from the game are unconditionally sent to real servers to ensure
 consistency
 
 ### Fixed
