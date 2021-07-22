@@ -2,19 +2,43 @@
 
 ![Demo Video](media/ggmain.webm)
 
-## tl;dr
+# 🔥⚠ HOTFIX
 
-🆕 Now with locally generated certs! 🔐
+For those suddenly getting network issues, you can replace the ip address with the right one
+in your hosts file.
+
+1. `ping ggst-game.guiltygear.com`. Note the IP address:
+
+```
+Pinging ggst-game.guiltygear.com [<ip addr>] with 32 bytes of data:
+```
+
+3. Run notepad as administrator
+4. Change the line with `ggst-game-real.guiltygear.com`. Note the **`real`**
+
+```
+# C:\windows\system32\drivers\etc\hosts
+<ip addr> ggst-game-real.guiltygear.com
+```
+
+
+    
+
+
+
+## tl;dr
 
 `gg-struggle` is a program that reduces loading times by caching
 the Guilty Gear server responses. Instead of taking 500+ ms/request,
 this takes ~20ms/req.
 
+Download [here](https://github.com/tsaibermelon/gg-struggle/releases/download/v1.4.1/install-gg-struggle-v1.4.1.exe)
+
 ### Usage
 
 1. Install using `install-gg-struggle.exe`.
 2. Start `gg-struggle`. Keep this console open while guilty gear is running.
-3. SLASH!
+3. _SLASH!_
 
 ## Overview
 
