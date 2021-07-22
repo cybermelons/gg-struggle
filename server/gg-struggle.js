@@ -2,7 +2,6 @@ const EventEmitter = require('events')
 const SmartBuffer = require('smart-buffer').SmartBuffer;
 const fs = require('fs')
 const hash = require('object-hash')
-const http = require('http')
 const https = require('https')
 const log4js = require('log4js')
 const parseTime = require('parse-duration')
