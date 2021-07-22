@@ -1,6 +1,6 @@
 {
   "name": "gg-struggle",
-  "version": "1.5.0",
+  "version": "2.0.0",
   "description": "guilty gear strive server emulator",
   "main": "server/entry.js",
   "scripts": {
@@ -12,6 +12,8 @@
   "author": "cybermelon",
   "license": "ISC",
   "dependencies": {
+    "assert": "^2.0.0",
+    "assert-strict": "^0.0.2",
     "degit": "^2.8.4",
     "fs-extra": "^8.1.0",
     "log4js": "^6.3.0",
