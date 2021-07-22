@@ -19,7 +19,6 @@
 ### Added
 
 - [x] git based auto-update
-	- [ ] test autoupdate
 - [x] Package node in zip
 
 ### Removed
@@ -28,8 +27,8 @@
 
 ### Changed
 
-- Disable caching for specific requests
-- Requests from the game are unconditionally sent to real servers to ensure
+- [ ] Disable caching for specific requests
+- [ ] Requests from the game are unconditionally sent to real servers to ensure
 consistency
 
 ### Fixed

@@ -21,31 +21,50 @@ class CacheLayer extends EventEmitter {
     this.ggHost = options.ggHost
   }
 
+  // spaghetti
   getCacheExpireTime = (url) => {
     if (url in this.cachePolicy.memoized) {
       return this.cachePolicy.memoized[url]
     }
 
-    let expDuration = parseTime(this.cachePolicy.default)
+    let expiryStr = this.getExpireString(url)
 
+    const expDuration = (expiryStr === '-1') ? -1 : parseTime(expiryStr)
+    if (expDuration === null) {
+      log4js.getLogger().error(`[CACHE] ${url} could not parse expiry string: ${expiryStr}`)
+    }
+
+    this.cachePolicy.memoized[url] = expDuration
+    if (expDuration !== -1) {
+      let expTimeMin = parseTime(expDuration, 'm')
+      log4js.getLogger().debug(`[CACHE] ${url} expDuration ${expDuration}`)
+      log4js.getLogger().debug(`[CACHE] ${url} given expire time of ${expTimeMin}`)
+    }
+    return expDuration
+  }
+
+  getExpireString = (url) => {
     let routes = this.cachePolicy.routes
     for (const regexStr in routes) {
       const regex = new RegExp(regexStr)
       if (regex.test(url)) {
-        console.log(`Found regex for ${regexStr} ${url}`)
-        expDuration = parseTime(routes[regexStr])
-        if (expDuration === null) {
-          log4js.getLogger().error(`[CACHE] ${url} could not parse expire duration for regex: ${regexStr}`)
-        }
-        break
+        log4js.getLogger().debug(`[CACHE] Matched regex for url ${url}: ${regexStr}min`)
+        return routes[regexStr]
       }
     }
 
-    let expTimeMin = parseTime(expDuration, 'm')
-    this.cachePolicy.memoized[url] = expDuration
-    log4js.getLogger().debug(`[CACHE] ${url} expDuration ${expDuration}`)
-    log4js.getLogger().debug(`[CACHE] ${url} given expire time of ${expTimeMin} min`)
-    return expDuration
+    return this.cachePolicy.default
+  }
+
+  shouldCache = (url) => {
+    const should =  this.getCacheExpireTime(url) > 0
+    log4js.getLogger().debug(`[CACHE] shouldCache(${url}): ${should}`)
+    return should
+  }
+
+  isItemExpired = (ggResp) => {
+    const expireTime = ggResp.timeStart + this.getCacheExpireTime(ggResp.url)
+    return Date.now() > expireTime
   }
 
   set = (key, ggResp) => {
@@ -68,21 +87,27 @@ class CacheLayer extends EventEmitter {
       let ggResp = this.cache.get(key)
       callback(ggResp)
 
-      // only refresh items if expired
-      let expireTime = ggResp.timeStart + this.getCacheExpireTime(gameReq.url)
-      if (Date.now() > expireTime) {
-        log4js.getLogger().info(`[CACHE] Refreshing key because expired: ${gameReq.key}`)
-        this.fetchGg(gameReq, (data) => {
-          this.emit('fetch', data)
+      // default - do nothing with fetched data
+      let doNothing = (d) => {}
+      let storeIfExpired = (data) => {
+        if (this.isItemExpired(ggResp)) {
           this.set(key, data)
-        })
+          log4js.getLogger().debug(`[CACHE] Cached response from gg: ${gameReq.key}`)
+        }
       }
+
+      // store the response if cache policy says so
+      let fetchCallback =
+        (this.shouldCache(gameReq.url)) ? storeIfExpired : doNothing
+
+      // always send request to gg, even if not caching
+      log4js.getLogger().info(`[CACHE] Sending request to gg: ${gameReq.key}`)
+      this.fetchGg(gameReq, fetchCallback)
     }
 
     else {
       this.emit('cache-miss', gameReq)
       this.fetchGg(gameReq, (data) => {
-        this.emit('fetch', data)
         this.set(key, data)
         callback(data)
       })
@@ -145,6 +170,7 @@ class CacheLayer extends EventEmitter {
           log4js.getLogger().debug(`[CACHE] Writing response ${gameReq.url} ${gameReq.method} ${key} to cache`)
           cachedResp.timeEnd = Date.now()
           cachedResp.payloadSize = cachedResp.buffer.toBuffer().length
+          this.emit('fetch', cachedResp)
           this.cache.set(gameReq.key, cachedResp)
 
           callback(cachedResp)
