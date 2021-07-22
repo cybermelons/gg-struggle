@@ -13,19 +13,18 @@
 ### To Fix
 
 - load unexpired cache entries on startup
+- Don't load very old cache entries from disk
 
 ## [2.0.0] 2021-07-22
 
 ### Added
 
 - git based auto-update
-- Package node in zip
+- NodeJS as an external dependency (for easier auto-update)
 
 ### Removed
 
 - Inno Setup installation in favor of .zip files
-	- [ ] install.ps1
-	- [ ] uninstall.ps1
 
 ### Changed
 

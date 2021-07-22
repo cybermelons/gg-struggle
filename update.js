@@ -10,9 +10,8 @@ const rl = readline.createInterface({
       output: process.stdout
 });
 
-//const REPO = 'tsaibermelon/gg-struggle'
-const REPO = 'https://git.yeet.st/cybermelon/gg-struggle'
-const BRANCH = '1.5.0-updatetest'
+const REPO = 'tsaibermelon/gg-struggle'
+const BRANCH = 'main'
 
 const emitter = tiged(`${REPO}#${BRANCH}`, {
   cache: false,
@@ -64,6 +63,5 @@ the entire ${ROOT} directory. Continue? [y/N] `, (answer) => {
     process.exit(1)
   })
 
-//  rl.close()
 })
 
