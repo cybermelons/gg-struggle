@@ -42,4 +42,5 @@ git --git-dir=$PWD/../.git archive --format=zip -o $OUTFILE HEAD
 
 # create a node version
 cp $OUTFILE $OUTFILE_NODE
+cp node/node.exe node/node  # we need node without file extension for npm install on windows
 zip -r --grow $OUTFILE_NODE node/

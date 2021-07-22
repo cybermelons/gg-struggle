@@ -1,7 +1,6 @@
 # Note: this must be run as admin!
-# This script patches the hosts file so that
-# 1. The game connects to gg-struggle via "ggst-game.guiltygear.com"
-# 2. We can still connect to arcsys via "ggst-game-real.guiltygear.com"
+# This script patches the hosts file so that guilty gear connects to our proxy
+# instead of the real servers
 
 # Install PsHosts for usability
 if (Get-Module -ListAvailable -Name PsHosts) {
@@ -14,7 +13,5 @@ else {
 
 $ggHostName = "ggst-game.guiltygear.com"
 
-$dns = Resolve-DnsName -NoHostsFile "$ggHostName"
-
 # add routes for gg-struggle
-Add-HostEntry "$ggHostName" 127.0.0.1
+Add-HostEntry -Force "$ggHostName" 127.0.0.1

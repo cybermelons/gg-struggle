@@ -1,6 +1,6 @@
 {
   "options": {
-    "pfxFile": "server/gg-struggle-cert.pfx",
+    "pfxFile": "gg-struggle-cert.pfx",
     "passphrase": "totsugeki",
     "port": 443,
 

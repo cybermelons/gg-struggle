@@ -20,9 +20,13 @@ Please remove any previous versions of gg-struggle using the uninstaller.
 
 Install and run by unzipping the .zip file in releases
 
+1. Install [NodeJs][nodejs]
 1. Download zip file from [releases][releases].
 2. Unzip to any directory, like `c:\tools\ggstruggle`
-3. Run `install-gg-struggle.ps1` *as admin*
+3. Run `install-gg-struggle.ps1` *as admin*. Say _yes_ to any prompts to:
+  - Install [NuGet][nuget] - To install PsHosts
+  - Install [PsHosts from PsGallery][pshosts] - Makes patching hosts file easier
+  - Unblock files
 4. gg-struggle is now installed.
 5. Run `start.ps1` normally before playing. You can minimize it
 6. _SLASH!_
@@ -32,7 +36,8 @@ Install and run by unzipping the .zip file in releases
 Once installed, the client can update itself. Just run `update.ps1` on windows,
 or `update.sh` on nix shells.
 
-If that doesn't work, just download and unzip the latest installer.
+If that doesn't work, just download and unzip the latest zip. Do not run the
+installer script again.
 
 ## Uninstall / Remove
 
@@ -126,3 +131,6 @@ You should also remove the `gg-struggle` certificate by
 3. Delete `gg-struggle`
 
 [releases]: https://github.com/tsaibermelon/gg-struggle/releases/download
+[pshosts]: https://www.powershellgallery.com/packages/PsHosts/1.1
+[nuget]: https://www.nuget.org/
+[nodejs]: https://nodejs.org/en/download/

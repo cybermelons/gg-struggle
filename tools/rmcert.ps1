@@ -7,7 +7,7 @@ function Remove-Gg-Certs {
     [string[]]$StorePath
   )
 
-  Foreach ($cert in Get-ChildItem $StorePath ` | where{$_.Subject -like "*(gg-struggle)*"}) {
+  Foreach ($cert in Get-ChildItem $StorePath ` | where{$_.FriendlyName -like "*gg-struggle*"}) {
     $certId = $cert.Thumbprint
     Remove-Item -path $StorePath\$certId
     Write-Host "Removed $StorePath\$certId "
