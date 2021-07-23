@@ -21,11 +21,6 @@ Pinging ggst-game.guiltygear.com [<ip addr>] with 32 bytes of data:
 <ip addr> ggst-game-real.guiltygear.com
 ```
 
-
-    
-
-
-
 ## tl;dr
 
 `gg-struggle` is a program that reduces loading times by caching
@@ -115,14 +110,26 @@ linux: `$TMPDIR/gg-struggle/all.log`
 
 ## FAQ
 
-> Is this a virus? How safe is this? Will I get banned?
+> Will I get banned?
 
-This is 100% safe. No game files or packets are tampered with,
-and the executable running is just a common webserver like apache or nginx.
+The likelihood of getting banned is highly unlikely, since we're not tampering
+with the game data nor the game client. We're just sitting on the network
+between the game and servers, cleanly passing data along.
 
-The HTTP requests that are cached are forwarded raw from the
-game to the real gg server. There's no way to distinguish if the HTTP
-request was made from the proxy or the game.
+We are sending slightly stale data back to the game client, so there can be
+some client-side bugs with out-of-date info, like showing a lobby list with
+someone who already left.
+
+> Why does this need admin privileges to install?
+
+We need to do two things with admin:
+
+1. Force windows to redirect all traffic from the game to your computer
+   running the proxy, gg-struggle. We do this by editing the hosts file
+2. Spoof the authenticity of the gg-struggle with your own self-signed cert.
+   We need to assure windows that it can trust gg-struggle is the
+   real `ggst-game.guiltygear.com`, even though it's really not.
+
 
 > What does the installation do?
 
@@ -134,19 +141,94 @@ The installation does 3 things
   - installs to the windows root store
   - copy stored at `%ProgramFiles%/gg-struggle`
 
-> Is this a private server?
+> Why is GG:ST so slow?
 
-This is NOT a private server. This is a cache that your game downloads from
+The only GG servers are located in Japan.
+
+When the game loads, a 100+ of HTTP requests are sent serially. Each request
+can take ~200-1500ms due to latency from a region like NA to Japan. This adds
+up to roughly `100 * 800 = 80+ seconds` in the average case.
+
+
+> Why doesn't the game just lump the requests into one big one?
+
+In Japan, the devs probably didn't experience this problem. 100 requests at 10ms/req
+is a 1 sec load time in Japan. With such low latency, sending them one-by-one is
+trivial.
+
+The game server API and infrastructure may also be outsourced to a 3rd party contractor and not the game devs themselves.
+Assuming their devs specialize in games and not network infrastructure, it would
+make a lot of sense for them to pay someone else to do this while their devs
+overwork themselves on the game itself.
+
+> How does gg-struggle fix this?
+
+I've written an in-depth non-tech explanation in the form of a movie heist in
+[EXPLANATION.md](docs/EXPLANATION.md)
+
+> How do we trick the game to use the gg-struggle instead of the real servers?
+
+We add the redirect rule in the hosts file. This file is Windows' global
+override for what IP address a specific domain is located. Since this is a
+system file, we need admin to edit it.
+
+> What about the SSL certs? Why does it need to install this cert into the root
+> store of my computer?
+
+We can lead the game to the proxy, but it will reject the connection if
+gg-struggle can't prove its identity. Installing the cert tells Windows that
+it can trust the authenticity of gg-struggle.
+
+With the cert installed, we can lead the game to our proxy and the game will
+believe it's the real server and not a spoofer.
+
+> Isn't using a self-signed certificate insecure?
+
+Well, no. Not as long as you generated it yourself and didn't share it.
+Installing a cert means you trust the identity of anyone
+who owns the key. You're the only one who owns it, so you're just adding
+yourself to the list of people you trust.
+
+Installing a _self-signed_ cert means nobody else except the owner can vouch
+for its authenticity. Usually certs are signed by a trusted CA
+but this one is signed by just the owner.
+Since you generated it yourself, you can safely trust it even though nobody else
+does.
+
+> Can an attacker use this self-signed cert to spoof other websites?
+
+Only if they manage to get ahold of it by reading your hard drive. And if
+they can, your computer's already compromised.
+
+Even if they did read it, they'd also need to spoof your DNS to redirect you
+to the IP address of their fake site.
+
+
+> What was the old security concern with the self-signed SSL cert?
+
+In previous versions, I gave out my pre-generated SSL cert that I used during
+testing instead of generating it at install.
+This would allow anyone with the key (everyone) to spoof any website
+and steal the victim's data with no warning. But even then, that would only be
+possible if victim mistakenly went to the wrong IP address via a separate DNS
+exploit.
+
+As of v1.3+, this no longer exists by generating the cert locally. The previous
+insecure releases have been removed from GitHub.
+
+> Is this a private game server?
+
+This is NOT a private server. This is a proxy-cache that your game downloads from
 the server.
 
 > Where is my data stored/sent?
 
-Data is never sent anywhere besides your computer and the real
-servers. All the magic happens locally.
+Data is never sent anywhere besides your computer and the real game servers.
+All the magic happens locally.
 
 The HTTP response/request payloads are stored in your temp directory,
-`%TEMP%/gg-struggle/dumps`. Request data can be viewed as a sqlite3
-database in `%TEMP%/gg-struggle/gg-struggle.db`.
+`%TEMP%/gg-struggle/dumps`. Request headers can be viewed in a sqlite3
+database named `%TEMP%/gg-struggle/gg-struggle.db`.
 
 > Does this affect gameplay at all?
 
@@ -159,6 +241,7 @@ to coordinate gameplay. This only affects out-of-game stuff like menus.
 
 If everything goes wrong, **edit the hosts file to remove any line that
 says `ggst-game.guiltygear.com`**. You must restart the game afterwards.
+It wouldn't hurt to also run `ipconfig /flushdns` afterwards.
 
 You should also remove the `gg-struggle` certificate by
 
