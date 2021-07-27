@@ -14,6 +14,7 @@ PrivilegesRequired=admin
 Source: "..\gg-struggle.exe"; DestDir: "{app}";
 Source: "localhost.cnf"; DestDir: "{app}";
 Source: "rmcert.ps1"; DestDir: "{app}";
+Source: "rmHosts.ps1"; DestDir: "{app}";
 Source: "gencert.ps1"; DestDir: "{app}";
 Source: "..\node_modules\sqlite3\lib\binding\napi-v3-win32-x64\node_sqlite3.node"; DestDir: "{app}\node_modules\sqlite3\lib\binding\napi-v3-win32-x64"
 Source: "..\README.md"; DestDir: "{app}";
@@ -23,10 +24,10 @@ Name: "{group}\Launch gg-struggle"; Filename: "{app}\gg-struggle.exe"
 Name: "{group}\Uninstall gg-struggle"; Filename: "{uninstallexe}"
 
 [UninstallRun]
-Filename: "powershell.exe"; Parameters: "-ExecutionPolicy Bypass -File rmcert.ps1 ""{app}"" "; \
+Filename: "powershell.exe"; Parameters: "-ExecutionPolicy Bypass -File rmHosts.ps1 ""{app}"" "; \
     WorkingDir: {app}; \
     Flags: runascurrentuser; \
-    StatusMsg: "Removing the gg-struggle certificate..."; \
+    StatusMsg: "Removing hosts entries"; \
 
 [Run]
 ; generate certificate and keys
