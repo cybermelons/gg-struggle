@@ -4,7 +4,7 @@
     "passphrase": "totsugeki",
     "port": 443,
 
-    "logLevel": "debug",
+    "logLevel": "info",
     "rootDir": "__TEMP__",
     "ggHost": "ggst-game.guiltygear.com",
     "cachePolicy": {

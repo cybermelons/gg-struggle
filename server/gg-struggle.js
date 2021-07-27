@@ -17,6 +17,7 @@ class CacheLayer extends EventEmitter {
     this.cachePolicy = options.cachePolicy
     this.cachePolicy.memoized = new Map()
     this.ggHost = options.ggHost
+    this.ggIp = options.ggIp
   }
 
   // spaghetti
@@ -113,10 +114,8 @@ class CacheLayer extends EventEmitter {
   }
 
 
-
   fetchGg = (gameReq, callback) => {
     const key = gameReq.key
-    console.log(this.ggIp)
     const options = {
       hostname: this.ggIp,
       port: 443,
