@@ -113,82 +113,76 @@ class CacheLayer extends EventEmitter {
     }
   }
 
+
+
   fetchGg = (gameReq, callback) => {
-    dnsPromises.setServers([
-      '4.4.4.4',
-      '8.8.8.8',
-    ])
+    const key = gameReq.key
+    const options = {
+      hostname: options.ggIp,
+      port: 443,
+      path: gameReq.url,
+      method: gameReq.method,
+      headers: {
+        'Host': 'ggst-game.guiltygear.com',
+        'user-agent': 'Steam',
+        'accept': '*/*',
+        'content-type': 'application/x-www-form-urlencoded',
+        'connection': 'keep-alive',
+      },
+    }
 
-    dnsPromises.resolve4(this.ggHost).then( (addresses) => {
-      console.info(addresses[0])
-      const key = gameReq.key
-      const options = {
-        hostname: addresses[0],
-        agent: false,
-        port: 443,
-        path: gameReq.url,
-        method: gameReq.method,
-        headers: {
-          'Host': 'ggst-game.guiltygear.com',
-          'user-agent': 'Steam',
-          'accept': '*/*',
-          'content-type': 'application/x-www-form-urlencoded',
-          'connection': 'keep-alive',
-        },
-      }
-
-      // create ggRequest
-      console.time(`gg-req ${key}`)
+    // create ggRequest
+    console.time(`gg-req ${key}`)
 
 
-      let cachedResp = {
-        statusCode: null,
-        headers: null,
-        payloadSize: 0,    // size of buffer on disk
-        buffer: new SmartBuffer(),
-        key: gameReq.key, // used to find payload data
-        url: gameReq.url,
-        method: gameReq.method,
+    let cachedResp = {
+      statusCode: null,
+      headers: null,
+      payloadSize: 0,    // size of buffer on disk
+      buffer: new SmartBuffer(),
+      key: gameReq.key, // used to find payload data
+      url: gameReq.url,
+      method: gameReq.method,
 
-        timeStart: Date.now(),
-        timeEnd: null,
-      }
+      timeStart: Date.now(),
+      timeEnd: null,
+    }
 
-      const ggReq = https.request(options, (ggResp) => {
-        // set headers before any writing happens
-        cachedResp.statusCode = ggResp.statusCode
-        cachedResp.headers = ggResp.headers
+    const ggReq = https.request(options, (ggResp) => {
+      // set headers before any writing happens
+      cachedResp.statusCode = ggResp.statusCode
+      cachedResp.headers = ggResp.headers
 
-        ggResp.on('data', d => {
-          // when we get payload data from gg, write it to cache and back to game
-          cachedResp.buffer.writeBuffer(d)
-        })
-
-        ggResp.on('end', (e) => {
-          log4js.getLogger().debug(`[CACHE] Writing response ${gameReq.url} ${gameReq.method} ${key} to cache`)
-          cachedResp.timeEnd = Date.now()
-          cachedResp.payloadSize = cachedResp.buffer.toBuffer().length
-          this.emit('fetch', cachedResp)
-          this.cache.set(gameReq.key, cachedResp)
-
-          callback(cachedResp)
-          console.timeEnd(`gg-req ${key}`)
-        })
-
-        ggResp.on('error', e => {
-          log4js.getLogger().warn(`[CACHE] Error in response from gg servers: ${e}`)
-          log4js.getLogger().warn(`[CACHE] Bailed on caching response from GG`)
-          this.cache.remove(key)
-          console.timeEnd(`gg-req ${key}`)
-        })
+      ggResp.on('data', d => {
+        // when we get payload data from gg, write it to cache and back to game
+        cachedResp.buffer.writeBuffer(d)
       })
 
-      // send the request.
-      ggReq.headers = gameReq.headers
-      ggReq.statusCode = gameReq.statusCode
-      ggReq.key = gameReq.key
-      ggReq.end(gameReq.buffer.toBuffer())
-    }).catch( (err) => {
+      ggResp.on('end', (e) => {
+        log4js.getLogger().debug(`[CACHE] Writing response ${gameReq.url} ${gameReq.method} ${key} to cache`)
+        cachedResp.timeEnd = Date.now()
+        cachedResp.payloadSize = cachedResp.buffer.toBuffer().length
+        this.emit('fetch', cachedResp)
+        this.cache.set(gameReq.key, cachedResp)
+
+        callback(cachedResp)
+        console.timeEnd(`gg-req ${key}`)
+      })
+
+      ggResp.on('error', e => {
+        log4js.getLogger().warn(`[CACHE] Error in response from gg servers: ${e}`)
+        log4js.getLogger().warn(`[CACHE] Bailed on caching response from GG`)
+        this.cache.remove(key)
+        console.timeEnd(`gg-req ${key}`)
+      })
+    })
+
+    // send the request.
+    ggReq.headers = gameReq.headers
+    ggReq.statusCode = gameReq.statusCode
+    ggReq.key = gameReq.key
+    ggReq.end(gameReq.buffer.toBuffer())
+  }).catch( (err) => {
       log4js.getLogger().error(`[PROXY] Failed to resolve ${hostname}: ${err}`)
     })
   }
