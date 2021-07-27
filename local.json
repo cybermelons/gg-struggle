@@ -7,6 +7,10 @@
     "logLevel": "info",
     "rootDir": "__TEMP__",
     "ggHost": "ggst-game.guiltygear.com",
+    "dnsServers": [
+      "4.4.4.4",
+      "8.8.8.8"
+    ],
     "cachePolicy": {
       "default": "3 hours",
       "routes": {

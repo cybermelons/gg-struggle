@@ -14,6 +14,12 @@
 
 - load unexpired cache entries on startup
 
+## [1.5.1] 2021-07-27
+
+### Fixed
+
+- DNS resolution looping back to 127.0.0.1 sometimes
+
 ## [1.5.0] 2021-07-27
 
 ### Changed

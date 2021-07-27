@@ -47,18 +47,21 @@ try {
 
 
   // resolve ip of gg servers at runtime
-  dnsPromises.setServers([
-    '4.4.4.4',
-    '8.8.8.8',
-  ])
+  dnsPromises.setServers(options.dnsServers)
   dnsPromises.resolve4(options.ggHost).catch( (err) => {
     log4js.getLogger().error(`[PROXY] Cannot resolve ${options.ggHost}: ${err}`)
     process.exit()
   })
   .then ( (addresses) => {
-    const addr = addresses[0]
+    const filtered = addresses.filter(addr => addr !== '127.0.0.1')
+    const addr = filtered[0]
+    if (filtered.length === 0) {
+        log4js.getLogger().error(`[PROXY] Could not find a non-127.0.0.1 address. Exiting...`)
+        process.exit(2)
+    }
+    log4js.getLogger().debug(`[PROXY] addresses: ${addresses}`)
     log4js.getLogger().info(`[PROXY] Proxying ${options.ggHost} -> ${addr}`)
-    options.ggIp = addresses[0]
+    options.ggIp = addr
     let app = ggstruggle.createLocalServer(options)
     app.listen()
   })
@@ -68,5 +71,5 @@ try {
   console.error(`[PROXY] Caught error at top-level: ${err}`)
   console.error(`Aborting...`)
   log4js.getLogger().error(err)
-  process.exit()
+  process.exit(255)
 }
