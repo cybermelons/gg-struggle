@@ -9,7 +9,7 @@ const os = require('os')
 const ggstruggle = require('./gg-struggle')
 
 try {
-  var cfg = 'server/local.json'
+  var cfg = 'local.json'
   if (process.argv.length < 3) {
     console.error(`[PROXY] No config specified. Using default ${cfg}`)
   }

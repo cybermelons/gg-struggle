@@ -35,7 +35,7 @@ openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -conf
 openssl pkcs12 -export -out gg-struggle-cert.pfx -inkey key.pem -in cert.pem
 
 # copy sample config and run w/ it
-cp server/local.json myconfig.json
+cp local.json myconfig.json
 node . myconfig.json
 ```
 

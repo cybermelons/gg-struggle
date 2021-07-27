@@ -15,6 +15,7 @@ Source: "..\gg-struggle.exe"; DestDir: "{app}";
 Source: "localhost.cnf"; DestDir: "{app}";
 Source: "rmcert.ps1"; DestDir: "{app}";
 Source: "rmHosts.ps1"; DestDir: "{app}";
+Source: "..\local.json"; DestDir: "{app}";
 Source: "gencert.ps1"; DestDir: "{app}";
 Source: "..\node_modules\sqlite3\lib\binding\napi-v3-win32-x64\node_sqlite3.node"; DestDir: "{app}\node_modules\sqlite3\lib\binding\napi-v3-win32-x64"
 Source: "..\README.md"; DestDir: "{app}";
