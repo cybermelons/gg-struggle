@@ -63,6 +63,8 @@ class CacheLayer extends EventEmitter {
 
   isItemExpired = (ggResp) => {
     const expireTime = ggResp.timeStart + this.getCacheExpireTime(ggResp.url)
+    const expired = Date.now() > expireTime
+    log4js.getLogger().debug(`[CACHE] expired(${ggResp.key}): timeStart:${ggResp.timeStart} expireTime:${expireTime} ${expired}`)
     return Date.now() > expireTime
   }
 
@@ -97,7 +99,7 @@ class CacheLayer extends EventEmitter {
 
       // store the response if cache policy says so
       let fetchCallback =
-        (this.shouldCache(gameReq.url)) ? storeIfExpired : doNothing
+        this.shouldCache(gameReq.url) ? storeIfExpired : doNothing
 
       // always send request to gg, even if not caching
       log4js.getLogger().info(`[CACHE] Sending request to gg: ${gameReq.key}`)
