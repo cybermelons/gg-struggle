@@ -10,7 +10,7 @@ this takes ~20ms/req.
 
 Download [here][releases]
 
-### zip Archive (Windows)
+### Installer
 
 Install and run by unzipping the .zip file in releases
 
@@ -24,7 +24,7 @@ Uninstall and reinstall with newest installer.
 
 ## Uninstall / Remove
 
-Run `uninstall-gg-struggle.ps1`.
+Run the uninstaller from Windows.
 
 You can verify it's removed by opening
 `c:\windows\system32\drivers\etc\hosts` in a text editor like notepad. This
