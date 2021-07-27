@@ -3,7 +3,7 @@
 
 [Setup]
 AppName=gg-struggle
-AppVersion=1.4
+AppVersion=1.5
 WizardStyle=modern
 DefaultDirName={autopf}\gg-struggle
 DefaultGroupName=gg-struggle
@@ -11,13 +11,13 @@ UninstallDisplayIcon={app}\UninstallGGstruggle.exe
 PrivilegesRequired=admin
 
 [Files]
-Source: "..\server\gg-struggle.exe"; DestDir: "{app}"; Flags: ignoreversion;
-Source: "..\server\local.json"; DestDir: "{app}"; Flags: ignoreversion;
-Source: "localhost.cnf"; DestDir: "{app}"; Flags: ignoreversion;
-Source: "rmcert.ps1"; DestDir: "{app}"; Flags: ignoreversion;
-Source: "gencert.ps1"; DestDir: "{app}"; Flags: ignoreversion;
-
-Source: "..\server\node_modules\sqlite3\lib\binding\napi-v3-win32-x64\node_sqlite3.node"; DestDir: "{app}\node_modules\sqlite3\lib\binding\napi-v3-win32-x64"
+Source: "..\gg-struggle.exe"; DestDir: "{app}";
+Source: "localhost.cnf"; DestDir: "{app}";
+Source: "rmcert.ps1"; DestDir: "{app}";
+Source: "rmHosts.ps1"; DestDir: "{app}";
+Source: "..\local.json"; DestDir: "{app}";
+Source: "gencert.ps1"; DestDir: "{app}";
+Source: "..\node_modules\sqlite3\lib\binding\napi-v3-win32-x64\node_sqlite3.node"; DestDir: "{app}\node_modules\sqlite3\lib\binding\napi-v3-win32-x64"
 Source: "..\README.md"; DestDir: "{app}";
 
 [Icons]
@@ -25,10 +25,10 @@ Name: "{group}\Launch gg-struggle"; Filename: "{app}\gg-struggle.exe"
 Name: "{group}\Uninstall gg-struggle"; Filename: "{uninstallexe}"
 
 [UninstallRun]
-Filename: "powershell.exe"; Parameters: "-ExecutionPolicy Bypass -File rmcert.ps1 ""{app}"" "; \
+Filename: "powershell.exe"; Parameters: "-ExecutionPolicy Bypass -File rmHosts.ps1 ""{app}"" "; \
     WorkingDir: {app}; \
     Flags: runascurrentuser; \
-    StatusMsg: "Removing the gg-struggle certificate..."; \
+    StatusMsg: "Removing hosts entries"; \
 
 [Run]
 ; generate certificate and keys
@@ -106,12 +106,11 @@ end;
 
 procedure UnPatchBothHosts();
 var
-  hosts: TStringList;
+  hostsToDelete: TStringList;
 begin
-  hosts := TStringList.Create();
-  hosts.Add('127.0.0.1 ggst-game.guiltygear.com')
-  hosts.Add('3.112.119.46 ggst-game-real.guiltygear.com')
-  UnPatchHostsFile(hosts);
+  hostsToDelete := TStringList.Create();
+  hostsToDelete.Add('127.0.0.1 ggst-game.guiltygear.com')
+  UnPatchHostsFile(hostsToDelete);
 end;
 
 procedure PatchBothHosts();
@@ -120,7 +119,6 @@ var
 begin
   hosts := TStringList.Create();
   hosts.Add('127.0.0.1 ggst-game.guiltygear.com')
-  hosts.Add('3.112.119.46 ggst-game-real.guiltygear.com')
   PatchHostsFile( hosts );
 end;
 

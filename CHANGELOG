@@ -5,13 +5,27 @@
 
 ### Planned
 
+- minimizing to systray
 - Web Interface
 - Stat Tracking
 - Payload parsers
 
-### Needs Fixing
+### To Fix
 
-- logging top level errors. pausing before quitting
+- load unexpired cache entries on startup
+
+## [1.5.0] 2021-07-27
+
+### Changed
+
+- Bypass caching for specific requests
+- Requests from the game are unconditionally sent to real servers to ensure
+consistency
+
+### Fixed
+
+- Demote some error messages to warnings
+- Fixed hardcoded IP addresses causing network issues
 
 ## [1.4.1] - 2021-07-08
 
@@ -49,4 +63,5 @@ one
 ### Fixed
 
 - Local installation
+
 

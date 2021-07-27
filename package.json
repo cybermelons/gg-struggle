@@ -1,26 +1,28 @@
 {
   "name": "gg-struggle",
-  "version": "1.0.0",
+  "version": "1.5.0",
   "description": "guilty gear strive server emulator",
-  "main": "entry.js",
-  "bin": {
-    "gg-struggle": "./entry.js"
-  },
-  "assets": [
-    "node_modules/sqlite3/lib/binding/napi-v3-win32-x64/node_sqlite3.node"
-  ],
+  "main": "server/entry.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "targets": ["win"],
+  "bin": [
+    "server/entry.js"
+  ],
+  "targets": [
+    "node14-win"
+  ],
   "author": "cybermelon",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
+    "degit": "^2.8.4",
+    "fs-extra": "^8.1.0",
     "log4js": "^6.3.0",
     "nconf": "^0.11.3",
     "object-hash": "^2.2.0",
     "parse-duration": "^1.0.0",
     "smart-buffer": "^4.1.0",
-    "sqlite3": "^5.0.2"
+    "sqlite3": "^5.0.2",
+    "tiged": "^2.11.0"
   }
 }

@@ -1,5 +1,6 @@
 // Locally run gg-struggle server. Meant to be packaged to windows
 
+const dnsPromises = require('dns').promises
 const fs = require('fs')
 const log4js = require('log4js')
 const nconf = require('nconf')
@@ -8,7 +9,7 @@ const os = require('os')
 const ggstruggle = require('./gg-struggle')
 
 try {
-  var cfg = './local.json'
+  var cfg = 'local.json'
   if (process.argv.length < 3) {
     console.error(`[PROXY] No config specified. Using default ${cfg}`)
   }
@@ -44,8 +45,23 @@ try {
 
   log4js.getLogger().info(`[PROXY] Logging to ${options.logFile}`)
 
-  let app = ggstruggle.createLocalServer(options)
-  app.listen()
+
+  // resolve ip of gg servers at runtime
+  dnsPromises.setServers([
+    '4.4.4.4',
+    '8.8.8.8',
+  ])
+  dnsPromises.resolve4(options.ggHost).catch( (err) => {
+    log4js.getLogger().error(`[PROXY] Cannot resolve ${options.ggHost}: ${err}`)
+    process.exit()
+  })
+  .then ( (addresses) => {
+    const addr = addresses[0]
+    log4js.getLogger().info(`[PROXY] Proxying ${options.ggHost} -> ${addr}`)
+    options.ggIp = addresses[0]
+    let app = ggstruggle.createLocalServer(options)
+    app.listen()
+  })
 
 } catch (err) {
 

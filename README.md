@@ -2,92 +2,40 @@
 
 ![Demo Video](media/ggmain.webm)
 
-# 🔥⚠ HOTFIX
-
-For those suddenly getting network issues, you can replace the ip address with the right one
-in your hosts file.
-
-1. `ping ggst-game.guiltygear.com`. Note the IP address:
-
-```
-Pinging ggst-game.guiltygear.com [<ip addr>] with 32 bytes of data:
-```
-
-3. Run notepad as administrator
-4. Change the line with `ggst-game-real.guiltygear.com`. Note the **`real`**
-
-```
-# C:\windows\system32\drivers\etc\hosts
-<ip addr> ggst-game-real.guiltygear.com
-```
-
 ## tl;dr
 
 `gg-struggle` is a program that reduces loading times by caching
 the Guilty Gear server responses. Instead of taking 500+ ms/request,
 this takes ~20ms/req.
 
-Download [here](https://github.com/tsaibermelon/gg-struggle/releases/download/v1.4.1/install-gg-struggle-v1.4.1.exe)
+Download [here][releases]
 
-### Usage
+### zip Archive (Windows)
 
-1. Install using `install-gg-struggle.exe`.
-2. Start `gg-struggle`. Keep this console open while guilty gear is running.
+Install and run by unzipping the .zip file in releases
+
+1. Use installer from releases [releases][releases].
+2. Run `gg-struggle` before playing. Keep this window open during play
 3. _SLASH!_
 
-## Overview
+## Updating
 
-`gg-struggle` is a local webserver that caches responses from the guilty
-This speeds up loading and menu times for regions furthest from Japan (NA, EU)
+Uninstall and reinstall with newest installer.
 
-I'll update this with more documentation as I have time
+## Uninstall / Remove
 
-### Automated Install
+Run `uninstall-gg-struggle.ps1`.
 
-Install using the `install-gg-struggle.exe` installer.
+You can verify it's removed by opening
+`c:\windows\system32\drivers\etc\hosts` in a text editor like notepad. This
+line should  __NOT__ exist.
 
-1. run `install-gg-struggle.exe`
-2. Launch `gg-struggle.exe` through the start menu
-3. Load game
+```
+127.0.0.1 ggst-game.guiltygear.com
+```
 
-NOTE: While installed, `gg-struggle` MUST be running while the game is up.
-You must uninstall to revert things to normal.
-
-### Manual Install
-
-1. Run `certmgr.exe` as admin
-2. Import `gg-struggle-cert.pem` under the **"Trusted Root Certification Authority"**
-3. Edit `c:\windows\system32\drivers\etc\hosts` file as admin to include the following lines
-
-    127.0.0.1 ggst-game.guiltygear.com
-    3.112.119.46 ggst-game-real.guiltygear.com
-
-## How It Works
-
-### Problem
-
-When loading up the main menu, the guilty gear game downloads all your game
-data in several HTTP (100+) requests to the game servers. These requests
-are done in order, waiting for one to complete before doing the next.
-
-Making this many requests isn't too bad, until you factor in latency.
-Each request has to go to Japan and back, ~250ms each way / ~500+ ms total.
-Multiply this by 100 requests and no wonder it can take it 5 minutes.
-
-A good explanation of this can be found on reddit: [here](https://www.reddit.com/r/Guiltygear/comments/oaqwo5/analysis_of_network_traffic_at_game_startup)
-
-### Solution
-
-tl;dr cache the responses and send old ones back to the game immediately.
-
-To solve this we put a fake server (`gg-struggle`) in the middle, between the game and the server.
-We trick our game into thinking `gg-struggle` is the real server and asks
-it for data. `gg-struggle` makes the same request to the real server and copies the response
-back to the game. Then saves the response for later.
-
-The next time the game tries to make the same request (e.g. download latest news),
-`gg-struggle` will already have saved that data from earlier and return it back
-immediately.
+If you see this line, open it with _notepad as administrator_ and delete the
+line and save.
 
 ## Known Issues
 
@@ -97,24 +45,30 @@ The first load is always gonna be slow as normal, but subsequent loads should be
 
 > Floor lockout / old data
 
-As of 1.3, any changes to player data won't show in the client for 24 hours.
-Future versions will dynamically cache data based on the request routes,
-so that trivial data like player lobbies are always up-to-date.
+Ranks and floor progressions would never update for some people.
 
-This'll be fixed in the next patch.
+This should be fixed in 1.5 Please report instances of this in issues.
 
 ## Logs
+
+Crashes are hopefully stored in the logs. If experiencing an issue,
+please paste relevant screenshots of the log.
 
 Windows: `%TEMP%/gg-struggle/all.log`
 linux: `$TMPDIR/gg-struggle/all.log`
 
 ## FAQ
 
+> Is this a virus? How safe is this?
+
+This isn't a virus, people can check the code.
+It's common webserver software.
+
 > Will I get banned?
 
-The likelihood of getting banned is highly unlikely, since we're not tampering
-with the game data nor the game client. We're just sitting on the network
-between the game and servers, cleanly passing data along.
+I'd say it's highly unlikely because `gg-struggle` runs as a standalone program
+that does not touch the game in any way. It reads your game's network traffic
+and relays it without any tampering.
 
 We are sending slightly stale data back to the game client, so there can be
 some client-side bugs with out-of-date info, like showing a lobby list with
@@ -130,16 +84,15 @@ We need to do two things with admin:
    We need to assure windows that it can trust gg-struggle is the
    real `ggst-game.guiltygear.com`, even though it's really not.
 
+There's no way to distinguish if the HTTP request was made from the proxy or the game.
 
-> What does the installation do?
+> What does installation do?
 
-The installation does 3 things
-
-1. Installs the .exe file
-2. Modifies the `hosts` file
-3. Locally generates a Self-Signed Certificate
+1. Modifies the `hosts` file
+2. Locally generates a Self-Signed Certificate (cause you can trust youself)
   - installs to the windows root store
   - copy stored at `%ProgramFiles%/gg-struggle`
+3. Installs the `gg-struggle` proxy to your program files.
 
 > Why is GG:ST so slow?
 
@@ -148,7 +101,6 @@ The only GG servers are located in Japan.
 When the game loads, a 100+ of HTTP requests are sent serially. Each request
 can take ~200-1500ms due to latency from a region like NA to Japan. This adds
 up to roughly `100 * 800 = 80+ seconds` in the average case.
-
 
 > Why doesn't the game just lump the requests into one big one?
 
@@ -162,6 +114,9 @@ make a lot of sense for them to pay someone else to do this while their devs
 overwork themselves on the game itself.
 
 > How does gg-struggle fix this?
+
+We remember the data from previous connections and serve that to the game
+while fetching from Japan in the background.
 
 I've written an in-depth non-tech explanation in the form of a movie heist in
 [EXPLANATION.md](docs/EXPLANATION.md)
@@ -248,3 +203,5 @@ You should also remove the `gg-struggle` certificate by
 1. Run `certmgr.msc` as admin
 2. Navigate to "Trusted Root Certifcation Authorities"
 3. Delete `gg-struggle`
+
+[releases]: https://github.com/tsaibermelon/gg-struggle/releases/download

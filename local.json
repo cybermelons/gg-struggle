@@ -1,0 +1,22 @@
+{
+  "options": {
+    "pfxFile": "gg-struggle-cert.pfx",
+    "passphrase": "totsugeki",
+    "port": 443,
+
+    "logLevel": "info",
+    "rootDir": "__TEMP__",
+    "ggHost": "ggst-game.guiltygear.com",
+    "cachePolicy": {
+      "default": "3 hours",
+      "routes": {
+        "/api/catalog/.*": "-1",
+        "/api/get_vip_status/.*": "3 hours",
+        "/api/lobby/.*": "-1",
+        "/api/player_match/.*": "-1",
+        "/api/statistics/.*": "3 hours",
+        "/api/sys/.*": "5 minutes",
+        "/api/tus/read": "-1"
+      }
+    } }
+}
