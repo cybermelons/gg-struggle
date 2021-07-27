@@ -119,13 +119,12 @@ class CacheLayer extends EventEmitter {
       '8.8.8.8',
     ])
 
-    const hostname = this.ggHost
-    dnsPromises.lookup(hostname).then( (resolved) => {
-      const addr = resolved.address
+    dnsPromises.resolve4(this.ggHost).then( (addresses) => {
+      console.info(addresses[0])
       const key = gameReq.key
       const options = {
-        //hostname: 'ggst-game.guiltygear.com',
-        hostname: addr,
+        hostname: addresses[0],
+        agent: false,
         port: 443,
         path: gameReq.url,
         method: gameReq.method,
@@ -540,7 +539,6 @@ exports.createLocalServer = (options) => {
   // in options, read from those files instead of using raw plaintext keys
 
   if (('certFile' in options)) {
-    log4js.getLogger().info('[PROXY] No cert provided. ')
     log4js.getLogger().info(`[PROXY] Using cert and key files: ${options.certFile}, ${options.keyFile}`)
     options.key = fs.readFileSync(options.keyFile)
     options.cert = fs.readFileSync(options.certFile)
