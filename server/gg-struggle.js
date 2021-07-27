@@ -6,7 +6,6 @@ const https = require('https')
 const log4js = require('log4js')
 const parseTime = require('parse-duration')
 const sqlite3 = require('sqlite3')
-const dnsPromises = require('dns').promises
 
 class CacheLayer extends EventEmitter {
   constructor(options) {
@@ -117,8 +116,9 @@ class CacheLayer extends EventEmitter {
 
   fetchGg = (gameReq, callback) => {
     const key = gameReq.key
+    console.log(this.ggIp)
     const options = {
-      hostname: options.ggIp,
+      hostname: this.ggIp,
       port: 443,
       path: gameReq.url,
       method: gameReq.method,
@@ -182,10 +182,8 @@ class CacheLayer extends EventEmitter {
     ggReq.statusCode = gameReq.statusCode
     ggReq.key = gameReq.key
     ggReq.end(gameReq.buffer.toBuffer())
-  }).catch( (err) => {
-      log4js.getLogger().error(`[PROXY] Failed to resolve ${hostname}: ${err}`)
-    })
   }
+
 
   contains(gameReq) {
     // TODO invalidate old requests
