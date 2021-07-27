@@ -5,10 +5,14 @@
 ## tl;dr
 
 `gg-struggle` is a program that reduces loading times by caching
-the Guilty Gear server responses. Instead of taking 500+ ms/request,
-this takes ~20ms/req.
+the Guilty Gear server responses, reducing slowdowns caused by _latency_. 
+Instead of taking 500+ ms/request, this takes ~20ms/req.
 
 Download [here][releases]
+
+This should _in theory_ work with [totsugeki](https://github.com/optix2000/totsugeki) 
+(which I find very cool) since that consolidates the TLS handshakes which
+are computationally expensive. Try at your own risk 
 
 ### Installer
 
