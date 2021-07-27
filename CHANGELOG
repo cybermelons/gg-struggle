@@ -14,27 +14,18 @@
 
 - load unexpired cache entries on startup
 
-## [2.0.0] 2021-07-22
-
-### Added
-
-- [x] git based auto-update
-- [x] Package node in zip
-
-### Removed
-
-- Inno Setup installation in favor of .zip files
+## [1.5.0] 2021-07-27
 
 ### Changed
 
-- [x] Bypass caching for specific requests
-- [x] Requests from the game are unconditionally sent to real servers to ensure
+- Bypass caching for specific requests
+- Requests from the game are unconditionally sent to real servers to ensure
 consistency
 
 ### Fixed
 
-- [ ] Demote some error messages to warnings
-- [x] Fixed hardcoded IP addresses causing network issues
+- Demote some error messages to warnings
+- Fixed hardcoded IP addresses causing network issues
 
 ## [1.4.1] - 2021-07-08
 
@@ -72,4 +63,5 @@ one
 ### Fixed
 
 - Local installation
+
 
